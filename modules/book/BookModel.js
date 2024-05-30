@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const BookSchema = mongoose.Schema({
     title:{
-        type: String
+        type: String,
+        index: true
     },
     description:{
         type:String
@@ -68,7 +69,8 @@ const BookSchema = mongoose.Schema({
     },
     category:{
         type: String,
-        enum: ["science","technology","health","religion","fiction","art","finance"]
+        enum: ["science","technology","health","religion","fiction","art","finance"],
+        index: true
     },
     averageRating:{
         type: Number,

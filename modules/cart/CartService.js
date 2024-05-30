@@ -1,6 +1,7 @@
 import { populate } from "dotenv";
 import BookModel from "../book/BookModel.js";
 import CartModel from "./CartModel.js";
+import LibraryModel from "../library/LibraryModel.js";
 
 class CartService {
     
@@ -14,6 +15,12 @@ class CartService {
             res.status(400);
             throw new Error ("You can't purchase your book.")
         };
+        // check if user has bought the book before adding to cart
+        const boughtByUser = await LibraryModel.findOne({user,book}) ;
+        if(boughtByUser){
+            res.status(400);
+            throw new Error("You have bought this book.")
+        }
         const cart = await CartModel.findOne({user});
         const {price,discount,discountPrice} = isAuthor;
         if(!cart){
@@ -64,7 +71,9 @@ class CartService {
             return cart;
         }
         await cart.save();
-        await cart.populate("items");
+        await cart.populate({path:"items",populate:{path:"author frontCover"}});
+        console.log({cart});
+        // await cart.populate("items");
         return cart;
     }
 

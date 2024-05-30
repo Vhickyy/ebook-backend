@@ -8,14 +8,23 @@ const paymentController = new PaymentController()
 
 class OrderService {
 
-    async createOrder (cartId) {
-        let cart = await CartModel.findOne({_id:cartId}).populate("items").populate("user");
+    async createOrder (cartId,bookId) {
+
+        if(bookId){
+            let book = await BookModel.findById({_id:bookId});
+            if(!book)return false;
+            const {email,fullname} = await UserModel.findById({_id:req.user.userId});
+            const {data} = await paymentController.initializePayment({amount:total,email,name:fullname});
+            await OrderModel.create({item:[book],orderValue:book.price,total:book.price,discount:book.discount,paymentReference: data.reference});
+            return data;
+        }
+
+        let cart = await CartModel.findById({_id:cartId}).populate("items").populate("user");
         if(!cart)return false;
         const {total} = cart;
         const {fullname,email} = cart.user;
         const {data} = await paymentController.initializePayment({amount:total,email,name:fullname});
         const {_id,...cartData} = cart.toJSON();
-        // console.log(cartData);
         await OrderModel.create({...cartData,paymentReference: data.reference});
         return data;
     }
@@ -23,31 +32,31 @@ class OrderService {
     async verifyOrder (reference,user,res) {
         const verifyPayment = await paymentController.verifyPayment(reference);
         const order = await OrderModel.findOne({user,paymentReference:reference});
-        // const cart = await CartModel.findOne({user});
-        console.log({order});
         if(!order) return false;
         if(order.status != "pending"){
             res.status(400);
             throw new Error("Orders has already been attempted for these items.")
         }
-        console.log({verifyPayment});
+        
         if(verifyPayment.data.status == "success"){
             order.status = "purchased";
-            await order.save();
-            console.log("verifying");
-            // const cart = await CartModel.findOne({user})
-            order.items.map( async (item) => {
-                await LibraryModel.create({user,book:item});
-            })
-            // const library = await LibraryModel.create()
+            const save = order.save();
+            const updateBookPromises = order.items.map(item => {
+                return BookModel.findByIdAndUpdate(item, { $inc: { sold: 1 } }, { new: true })
+            }
+            );
+
+            const createLibraryPromises = order.items.map(item =>
+                LibraryModel.create([{ user, book: item }])
+            );
+
+            await Promise.all([...updateBookPromises, ...createLibraryPromises,save]);
+
             await CartModel.findOneAndDelete({user});
-            console.log("done");
             return true;
         } else{
             order.status = "failed";
             await order.save();
-            // await OrderModel.findOneAndUpdate({user,paymentReference:reference},{status:"failed"},{new:true});
-            console.log("error");
             return false
         }
     }

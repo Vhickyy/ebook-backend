@@ -87,7 +87,6 @@ class BookService {
             return {books,pageSize}
         }
         books = await BookModel.find(query).skip(skip).limit(limit).populate({ path: "author", select: "fullname" });
-        // await books.populate({path:"author",select:"full name"})
         const totalBooks = await BookModel.countDocuments(query);
         const pageSize = Math.ceil(totalBooks / limit);
         return {books,pageSize};

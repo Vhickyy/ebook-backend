@@ -13,6 +13,7 @@ class AnonymousCartService {
         const {price,discount,discountPrice} = bookExist;
         if(!cart){
             const cartItem = await AnonymousCartModel.create({uuid,items:[book],removedAt:Date.now(),orderValue:price,total:discountPrice,discount});
+            await cartItem.populate({path:"items",populate:{path:"author frontCover"}})
             return cartItem;
         }
         const ItemInCart = cart.items.find(item => {
@@ -28,6 +29,7 @@ class AnonymousCartService {
         cart.discount += discount;
         cart.total += discountPrice;
         await cart.save();
+        await cartItem.populate({path:"items",populate:{path:"author frontCover"}})
         return cart;
     }
 

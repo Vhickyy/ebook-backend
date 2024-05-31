@@ -52,6 +52,7 @@ const paymentService = new PayStackService();
 class PaystackController {
 
   async initializePayment (order) {
+    console.log(order);
     // const {amount,email,callbackUrl,name} = req.body;
     // if(!amount || !email || !name) return res.status(400).json({success:false,message:"Please provide all fields."});
     // const payment = {amount,email,callback_url:process.env.CALL_BACK_URL, metadata:{amount,email,name}}

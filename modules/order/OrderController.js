@@ -6,9 +6,9 @@ const orderService = new OrderService;
 class OrderController {
 
     async createOrder (req,res) {
-        // console.log("uuyguy");
-        if(!req.body.cartId || !mongoose.isValidObjectId(req.body.cartId)) return res.status(400).json({success:false,message:"Provide a valid id"})
-        const order = await orderService.createOrder(req.body.cartId,req.user.userId);
+        if((!req.body.cartId && !req.body.bookId) || (!mongoose.isValidObjectId(req.body.cartId) && !mongoose.isValidObjectId(req.body.bookId))) return res.status(400).json({success:false,message:"Provide a valid id"});
+
+        const order = !req.body.bookId ? await orderService.createOrder({cartId:req.body.cartId,user:req.user.userId}) : await orderService.createOrder({bookId:req.body.bookId,user:req.user.userId});
         if(!order) return res.status(400).json({success:false,message:"Cart Id not found"})
         return res.status(200).json({msg:"order created",order})
     }

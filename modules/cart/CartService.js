@@ -41,7 +41,7 @@ class CartService {
         cart.total += discountPrice;
         await cart.save();
         await cart.populate({path:"items",populate:{path:"author frontCover"}});
-        console.log(cart);
+        // console.log({cart});
         return cart;
     }
 

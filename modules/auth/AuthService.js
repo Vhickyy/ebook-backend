@@ -4,8 +4,10 @@ import { generateOtp } from "../../utils/userUtil.js";
 import { sendEmail } from "../../utils/utils.js";
 import AnonymousCartModel from "../anonymousCart/AnonymousCartModel.js";
 import CartModel from "../cart/CartModel.js";
+import LibraryModel from "../library/LibraryModel.js";
 import ProfileService from "../profile/ProfileService.js";
 import UserModel from "./UserModel.js";
+import {Types} from "mongoose";
 
 const profileService = new ProfileService();
 
@@ -43,41 +45,82 @@ class AuthService {
         delete user["_doc"].password;
         if(!uuid){
             const cart = await CartModel.findOne({user:user._id});
+            await cart.populate({path:"items",populate:{path:"author frontCover"}});
             return {user,cart};
         }
-        let annonymousCart = await AnonymousCartModel.findOne({uuid}).populate("items","price");
-        // console.log({annonymousCart});
+        let annonymousCart = await AnonymousCartModel.findOne({uuid});
+        
+        // for(let i = 0; i < annonymousCart.length; i++){
+
+        // }
         // if(annonymousCart.removedAt < Date.now()){
         //     annonymousCart = []
         // }
+
+        // check if annon is in lib beofre merging
+        const lib = await LibraryModel.find({user:user._id});
+        if(lib.length){
+            
+            let inLib = [];
+            let strCart = [];
+            if(annonymousCart){
+                for(let i = 0; i < annonymousCart.items.length; i++){
+                    strCart.push(annonymousCart.items[i].toString());
+                    const item  = lib.find(lib => {
+                        // console.log(lib.book.toString(),annonymousCart.items[i].toString());
+                        return lib.book.toString() == annonymousCart.items[i].toString()
+                    });
+                    if(item){
+                        inLib.push(item.book.toString())
+                    }
+                }
+                // console.log('here');
+                if(strCart.length === inLib.length){
+                    // annonymousCart = await annonymousCart.deleteOne();
+                    annonymousCart = [];
+                }else{
+                    const newCartSet = strCart.filter(item => !inLib.includes(item));
+                    console.log({newCartSet});
+                    annonymousCart.items = newCartSet;
+                    annonymousCart = await annonymousCart.save();
+                    await annonymousCart.populate("items","price")
+                }
+            }
+           
+        }
+
         let cart = await CartModel.findOne({user:user._id}).populate("items","price");
-        const merge = [...(annonymousCart ? annonymousCart.items : []),...(cart ? cart.items : [])];
+
+        if(annonymousCart && annonymousCart.items){
+            const merge = [...(annonymousCart ? annonymousCart.items : []),...(cart ? cart.items : [])];
             let mergeCarts = {};
             for(let i = 0; i < merge.length; i++){
                 if(!mergeCarts[merge[i]._id.toString()]){
                     mergeCarts[merge[i]._id.toString()] = merge[i].price;
                 }
             }
-        // check if an author added his book to annonymous cart because author shoulg not buy their book
-        if(!cart){
-            const {orderValue,discount,total} = annonymousCart;
-            cart = await CartModel.create({user:user._id,items:Object.keys(mergeCarts),orderValue,discount,total})
-        }else{
-            // const merge = [...annonymousCart.items,...cart.items];
-            // let mergeCarts = {};
-            // for(let i = 0; i < merge.length; i++){
-            //     if(!mergeCarts[merge[i]._id.toString()]){
-            //         mergeCarts[merge[i]._id.toString()] = merge[i].price;
-            //     }
-            // }
-            const orderValue = Object.values(mergeCarts).reduce((acc,val) => acc += val, 0);
-            cart.items = Object.keys(mergeCarts); 
-            cart.orderValue = orderValue;
-            cart.discount = 0;
-            cart.total = orderValue;
-            await cart.save();
+            // check if an author added his book to annonymous cart because author shoulg not buy their book
+            if(!cart){
+                const {orderValue,discount,total} = annonymousCart;
+                cart = await CartModel.create({user:user._id,items:Object.keys(mergeCarts),orderValue,discount,total})
+            }else{
+                
+                const orderValue = Object.values(mergeCarts).reduce((acc,val) => acc += val, 0);
+                cart.items = Object.keys(mergeCarts); 
+                cart.orderValue = orderValue;
+                cart.discount = 0;
+                cart.total = orderValue;
+                await cart.save();
+            }
         }
+
         await AnonymousCartModel.findOneAndDelete({uuid});
+        if(cart){
+            await cart.populate({path:"items",populate:{path:"author frontCover"}});
+        }else{
+            cart = [];
+        }
+        // console.log({user,cart});
         return {user,cart}
     }
 

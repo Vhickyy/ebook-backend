@@ -12,6 +12,7 @@ class AuthController {
     }
 
     async loginUser (req,res) {
+        console.log('hjhdjdh');
         const {email,password,uuid} = req.body;
         const {user,cart} = await authService.loginUser({email,password,uuid},res);
         const token = generateJWT(user._id,user.role);

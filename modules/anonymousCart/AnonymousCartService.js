@@ -29,7 +29,7 @@ class AnonymousCartService {
         cart.discount += discount;
         cart.total += discountPrice;
         await cart.save();
-        await cartItem.populate({path:"items",populate:{path:"author frontCover"}})
+        await cart.populate({path:"items",populate:{path:"author frontCover"}})
         return cart;
     }
 

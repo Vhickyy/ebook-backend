@@ -2,6 +2,7 @@ import WishlistModel from "../Wishlist/WishlistModel.js";
 import UserModel from "../auth/UserModel.js";
 import LibraryModel from "../library/LibraryModel.js";
 import CartModel from "../cart/CartModel.js"
+import AnnonymousCartModel from "../anonymousCart/AnonymousCartModel.js";
 import BookModel from "./BookModel.js";
 import cloudinay from "cloudinary"
 import fs from "fs/promises"
@@ -107,16 +108,8 @@ class BookService {
         //     if (role === "author") {
         //         query.author = { $ne: req.user.userId };
         //     }
-        //     const wishlist = await WishlistModel.findOne({user:userId});
-        //     // console.log({wishlist});
-        //     // books = await BookModel.find(query).skip(skip).limit(limit);
-        //     books = await BookModel.find(query).skip(skip).limit(limit);
-        //     const totalBooks = await BookModel.countDocuments(query);
-        //     const pageSize = Math.ceil(totalBooks / limit);
-        //     books = books.map((book,i) => wishlist.items.includes(book._id) ? {...book._doc,inWishlist:true} : {...book._doc,inWishlist:false});
-        //     return {books,pageSize}
 
-        // find if in library first
+            //------ find if book  in library first to display if bought or not ----------//
             const library = await LibraryModel.findOne({user:userId,book:req.params.id});
             book = library ? {...book.toJSON(),bought:true} : {...book.toJSON(),bought:false};
 
@@ -125,8 +118,14 @@ class BookService {
                 book = cart ? {...book,inCart:true} : {...book,inCart:false};
             }
 
+        }else{
+            if(req.query.uuid){
+                const annonymousCart = await AnnonymousCartModel.findOne({uuid:req.query.uuid,items:{$in: [req.params.id]}});
+                console.log({annonymousCart});
+                book = annonymousCart ? {...book.toJSON(),inCart:true} : {...book.toJSON(),inCart:false};
+            }
         }
-        console.log(book);
+        // console.log({book});
         return book;
     }
 

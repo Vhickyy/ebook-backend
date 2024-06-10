@@ -6,7 +6,7 @@ import AnnonymousCartModel from "../anonymousCart/AnonymousCartModel.js";
 import BookModel from "./BookModel.js";
 import cloudinay from "cloudinary"
 import fs from "fs/promises"
-
+import {  uploadToS3 } from "../../services/cloudinary.js";
 
 class BookService {
 
@@ -20,34 +20,66 @@ class BookService {
         const frontCoverImage = frontCover[0];
         const backCoverImage = backCover[0];
         // check if pdf is doc and the rest are images of specific size
-        if(!pdfFile.mimetype.includes("image") || !frontCoverImage.mimetype.includes("image") || !backCoverImage.mimetype.includes("image")){
+        // console.log({pdf:pdfFile.mimetype});
+        if(!pdfFile.mimetype.includes("pdf") || !frontCoverImage.mimetype.includes("image") || !backCoverImage.mimetype.includes("image")){
             res.status(400)
             throw new Error("Provide a front and back cover image for book.")
         }
-        // console.log(pdfFile,frontCoverImage,backCoverImage);
-        // upload to cloud and remove uploads file
-        let resImg;
-        let resPdf;
-        try {
-            // console.log(pdfFile.path);
-            resPdf = await cloudinay.v2.uploader.upload(pdfFile.path,{folder:"pdf"});
-            await fs.unlink(pdfFile.path)
-            resImg = [frontCoverImage,backCoverImage].map( async item => {
-                const {path} = item
-                // await fs.unlink(path)
-                return await cloudinay.v2.uploader.upload(path,{folder:"book-image"});
-            })
-        } catch (error) {
-            // console.log(error);
-            res.status(424);
-            throw new Error("Error occurred while uploading files.")
+        const pdfFileName = `${Date.now()}.${pdfFile.originalname.split('.').pop()}`;
+        const frontFileName = `${Date.now()}3fc.${frontCoverImage.originalname.split('.').pop()}`;
+        const backFileName = `${Date.now()}.${backCoverImage.originalname.split('.').pop()}`;
+        console.log(pdfFileName);
+        // s3
+        const uploadPromises = [
+            uploadToS3(pdfFile,pdfFileName, pdfFile.mimetype),
+            uploadToS3(frontCoverImage,frontFileName, frontCoverImage.mimetype),
+            uploadToS3(backCoverImage,backFileName, backCoverImage.mimetype)
+        ];
+
+        const results = await Promise.allSettled(uploadPromises);
+
+        const uploadSuccess = results.every(result => result.status === 'fulfilled');
+        if (!uploadSuccess) {
+            res.status(424)
+            throw new Error("Error occurred while uploading files." );
         }
-        const response = await Promise.all(resImg);
+
+        const [pdfResult, frontCoverResult, backCoverResult] = results.map(result => result.value);
+        console.log({pdfResult});
+
         let discountPrice = req.body.price;
         if(req.body.discount){
             discountPrice = req.body.price - ((req.body.discount/100) * req.body.price)
         }
-        const newBook = {...req.body, pdf: {publicUrl: resPdf.public_id,secureUrl:resPdf.secure_url}, frontCover: {publicUrl: response[0].public_id, secureUrl: response[0].secure_url}, backCover:{publicUrl: response[1].public_id, secureUrl: response[1].secure_url}, discountPrice};
+
+        const newBook = {...req.body, pdf: { image: pdfResult}, frontCover: { image: frontCoverResult}, backCover:{ image: backCoverResult}, discountPrice};
+
+        // upload to cloud and remove uploads file
+        // let resImg;
+        // let resPdf;
+        // try {
+        //     // console.log(pdfFile.path);
+        //     resPdf = await cloudinay.v2.uploader.upload(pdfFile.path, {
+        //         resource_type: "raw", // for non-image files like PDFs
+        //         folder: "pdf" 
+        //       });
+        //     await fs.unlink(pdfFile.path)
+        //     resImg = [frontCoverImage,backCoverImage].map( async item => {
+        //         const {path} = item
+        //         // await fs.unlink(path)
+        //         return await cloudinay.v2.uploader.upload(path,{folder:"book-image"});
+        //     })
+        // } catch (error) {
+        //     // console.log(error);
+        //     res.status(424);
+        //     throw new Error("Error occurred while uploading files.")
+        // }
+        // const response = await Promise.all(resImg); 
+        // let discountPrice = req.body.price;
+        // if(req.body.discount){
+        //     discountPrice = req.body.price - ((req.body.discount/100) * req.body.price)
+        // }
+        // const newBook = {...req.body, pdf: {publicUrl: resPdf.public_id,secureUrl:resPdf.secure_url}, frontCover: {publicUrl: response[0].public_id, secureUrl: response[0].secure_url}, backCover:{publicUrl: response[1].public_id, secureUrl: response[1].secure_url}, discountPrice};
         const book = await BookModel.create(newBook);
         return book;
     }
@@ -78,30 +110,62 @@ class BookService {
                 query.author = { $ne: req.user.userId };
             }
             const wishlist = await WishlistModel.findOne({user:userId});
-            // console.log({wishlist});
-            // books = await BookModel.find(query).skip(skip).limit(limit);
             books = await BookModel.find(query).skip(skip).limit(limit).populate({ path: "author", select: "fullname" });
             const totalBooks = await BookModel.countDocuments(query);
             const pageSize = Math.ceil(totalBooks / limit);
-            books = books.map((book,i) => wishlist.items.includes(book._id) ? {...book._doc,inWishlist:true} : {...book._doc,inWishlist:false});
-            console.log(books);
+            books = books?.map((book,i) => wishlist.items.includes(book._id) ? {...book._doc,inWishlist:true} : {...book._doc,inWishlist:false});
+            // const signedBooks = await Promise.all(
+            //     books.map(async (book) => {
+            //         const pdfUrl = await getImage(`pdf/${book.pdf.image}`)
+            //         const frontUrl = await getImage(`image/${book.frontCover.image}`)
+            //         const backUrl = await getImage(`image/${book.backCover.image}`)
+            //         // console.log({pdfUrl});
+            //         return {
+            //             ...book,
+            //             pdf: { ...book.pdf, imageUrl: pdfUrl },
+            //             frontCover: { ...book.frontCover, imageUrl: frontUrl },
+            //             backCover: { ...book.backCover, imageUrl: backUrl }
+            //         };
+            //     })
+            //   );
+            console.log({books});
             return {books,pageSize}
-        }
+        } 
         books = await BookModel.find(query).skip(skip).limit(limit).populate({ path: "author", select: "fullname" });
         const totalBooks = await BookModel.countDocuments(query);
         const pageSize = Math.ceil(totalBooks / limit);
+        // const signedBooks = await Promise.all(
+        //     books.map(async (book) => {
+        //         const pdfUrl = await getImage(`pdf/${book.pdf.image}`)
+        //             const frontUrl = await getImage(`image/${book.frontCover.image}`)
+        //             const backUrl = await getImage(`image/${book.backCover.image}`)
+        //         // console.log({pdfUrl});
+        //         return {
+        //             ...book._doc,
+        //             pdf: { ...book.pdf._doc, imageUrl: pdfUrl },
+        //             frontCover: { ...book.frontCover._doc, imageUrl: frontUrl },
+        //             backCover: { ...book.backCover._doc, imageUrl: backUrl }
+        //         };
+        //     })
+        //   );
+      
+        //   res.json(signedBooks);
+        // console.log("hi");
+        // console.log({signedBooks});
+        console.log({books});
         return {books,pageSize};
     }
 
-    async getAllAuthorBook () {
-        if(req.user.role != "author")return false
-        const books = await BookModel.find({author:req.user.userId});
+    async getAllAuthorBooks (author) {
+        // if(req.user.role != "author")return false
+        const books = await BookModel.find({author});
         return books;
     }
 
     async getBook (req){
         // console.log(_id);
         let book = await BookModel.findById({_id:req.params.id}).populate("author").populate("reviews");
+        console.log({book});
         // check if there is a user and if the book is in their library or cart then they should read and not buy it, if they started readin, they should continue reading.
         if(req?.user){
             const {userId} = req.user;
@@ -135,21 +199,47 @@ class BookService {
             res.status(404)
             throw new Error("Book not found")
         }
-        const {frontCover,backCover} = req.files;
-        if(!frontCover || !backCover){
-            res.status(400)
-            throw new Error("Provide images for book.")
+        if(isAuthor.sold){
+            res.status(404)
+            throw new Error("You can't update a book that has been bought. Contact Support Team for assistance.")
         }
+        const {pdf,frontCover,backCover} = req.files;
+        if(!pdf || !frontCover || !backCover){
+            res.status(400)
+            throw new Error("Provide pdf and images for book.")
+        }
+        const pdfFile = pdf[0];
         const frontCoverImage = frontCover[0];
         const backCoverImage = backCover[0];
         // check if pdf is doc and the rest are images of specific size
-        // check if pdf is doc and the rest are images of specific size
-        if(!frontCoverImage.mimetype.includes("image") || !backCoverImage.mimetype.includes("image")){
+        if(!pdfFile.mimetype.includes("pdf") || !frontCoverImage.mimetype.includes("image") || !backCoverImage.mimetype.includes("image")){
             res.status(400)
             throw new Error("Provide a front and back cover image for book.")
         }
-        // delete and upload to cloud and remove uploads file
-        const updatedBook = {...req.body, frontCover: frontCoverImage.filename, backCover:backCoverImage.filename};
+        let resImg;
+        let resPdf;
+        try {
+            // console.log(pdfFile.path);
+            resPdf = await cloudinay.v2.uploader.upload(pdfFile.path, {
+                resource_type: "raw", 
+                folder: "pdf" 
+              });
+            await fs.unlink(pdfFile.path)
+            resImg = [frontCoverImage,backCoverImage].map( async item => {
+                const {path} = item;
+                return await cloudinay.v2.uploader.upload(path,{folder:"book-image"});
+            })
+        } catch (error) {
+            res.status(424);
+            throw new Error("Error occurred while uploading files.")
+        }
+        const response = await Promise.all(resImg);
+        let discountPrice = req.body.price;
+        if(req.body.discount){
+            discountPrice = req.body.price - ((req.body.discount/100) * req.body.price)
+        }
+        const updatedBook = {...req.body, pdf: {publicUrl: resPdf.public_id,secureUrl:resPdf.secure_url}, frontCover: {publicUrl: response[0].public_id, secureUrl: response[0].secure_url}, backCover:{publicUrl: response[1].public_id, secureUrl: response[1].secure_url}, discountPrice};
+        // const updatedBook = {...req.body};
         const book = await BookModel.findOneAndUpdate({_id:req.params.id,author:req.user.userId},updatedBook,{new:true});
         return book;
     }
@@ -157,6 +247,10 @@ class BookService {
     async deleteBook (_id,author,res) {
         const book = await BookModel.findOne({_id,author});
         if(!book) return false
+        if(book.sold){
+            res.status(400)
+            throw new Error("Cannot delete this item because it has been sold.")
+        }
         await book.deleteOne();
         return true;
     }

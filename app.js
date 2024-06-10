@@ -12,12 +12,6 @@ import LibraryRouter from "./modules/library/LibraryRoute.js";
 
 const appConfig = (app) => {
 
-    // Move to Cloudinary service provider
-    cloudinary.v2.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-    })
 
     // test
     // <Move to seperate router file

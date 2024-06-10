@@ -34,6 +34,7 @@ class AuthService {
     async loginUser ({email,password,uuid},res) {
         const user = await UserModel.findOne({email});
         const validPassword = await comparePassword(password,user?.password);
+        // console.log("ji");
         if(!user || !validPassword){
             res.status(400);
             throw new Error("Provide Valid Credentials")
@@ -45,11 +46,10 @@ class AuthService {
         delete user["_doc"].password;
         if(!uuid){
             const cart = await CartModel.findOne({user:user._id});
-            await cart.populate({path:"items",populate:{path:"author frontCover"}});
+            if(cart) await cart.populate({path:"items",populate:{path:"author frontCover"}});
             return {user,cart};
         }
         let annonymousCart = await AnonymousCartModel.findOne({uuid});
-        
         // for(let i = 0; i < annonymousCart.length; i++){
 
         // }
@@ -59,6 +59,7 @@ class AuthService {
 
         // check if annon is in lib beofre merging
         const lib = await LibraryModel.find({user:user._id});
+        console.log({lib});
         if(lib.length){
             
             let inLib = [];

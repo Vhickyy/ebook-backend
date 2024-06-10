@@ -60,8 +60,14 @@ class OrderService {
             await Promise.all([...updateBookPromises, ...createLibraryPromises,save]);
 
             if(order.items.length == 1){
-                const cart = await CartModel.findOneAndUpdate({user},{ $pull: { items: order.items[0] } },{new:true});
-                if(!cart.items.length) await cart.remove();
+                const cart = await CartModel.findOneAndUpdate(
+                    { user },
+                    { $pull: { items: order.items[0] }, $inc: { total: -order.total, orderValue: -order.orderValue } },
+                    { new: true }
+                );
+                if(!cart.items.length) {
+                    await cart.deleteOne();
+                }
             } else{
                 await CartModel.findOneAndDelete({user});
             }

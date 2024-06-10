@@ -10,6 +10,7 @@ class LibraryController {
 
     async getLibrary (req,res) {
         const data = await libraryService.getLibrary(req.user.userId);
+        console.log({data});
         if(!data) return res.status(200).json({success:true,message:"Your library is empty", data:{library:[],recentlyOpened:[]}});
         return res.status(200).json({success:true,message:"Library Sent",data:{library:data,recentlyOpened:[]}});
     }

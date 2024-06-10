@@ -23,7 +23,7 @@ class OrderController {
 
     async getAllOrdersForUser (req,res){
         const orders = await orderService.getAllOrdersForUser(req.user.userId);
-        return res.status(200).json({msg:"orders sent"})
+        return res.status(200).json({success:true,message:"orders sent",data:orders})
     }
 }
 

@@ -33,22 +33,28 @@ const BookSchema = mongoose.Schema({
     },
     frontCover:{
         type: {
-            secureUrl: String,
-            publicUrl: String
+            // secureUrl: String,
+            // publicUrl: String
+            image: String,
+            imageUrl: String
         },
         required: true
     },
     backCover: {
         type: {
-            secureUrl: String,
-            publicUrl: String
+            // secureUrl: String,
+            // publicUrl: String
+            image: String,
+            imageUrl: String
         },
         required: true
     },
     pdf: {
         type: {
-            secureUrl: String,
-            publicUrl: String
+            // secureUrl: String,
+            // publicUrl: String
+            image: String,
+            imageUrl: String
         },
         required: true
     },

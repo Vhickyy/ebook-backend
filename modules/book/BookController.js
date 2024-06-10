@@ -19,7 +19,15 @@ class BookController {
         return res.status(201).json({success: true,message:"Books sent successfully", data: {books,length:books.length,pageSize:pageSize}})
     }
 
+    async getAllAuthorBooks (req,res){
+        // console.log(req.body.id);
+        const books = await bookService.getAllAuthorBooks(req.params.id);
+        console.log(books);
+        return res.status(201).json({success: true,message:"Books sent successfully", data: {books}})
+    }
+
     async getBook (req,res){
+       
         const book = await bookService.getBook(req);
         if(!book){
             return res.status(404).json({success: false, message: "No such book"})
@@ -28,6 +36,7 @@ class BookController {
     }
 
     async updateBook (req,res) {
+        console.log("herrr");
         const book = await bookService.updateBook(req,res);
         return res.status(201).json({success: true,message:"Book updated Successfully", data: book});
     }

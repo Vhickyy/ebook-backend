@@ -48,11 +48,25 @@ class CartService {
 
     async getCart(user) {
         // pending: think if cart can be gotten by the id after login
-        // let cart = await CartModel.findOne({user}).populate("items");
-        let cart = await CartModel.findOne({user}).populate({path:"items",select: "title price discountPrice discount",populate:{path:"author frontCover"}});
-        // // console.log("ji");
-        // cart = await BookModel.populate(cart,{path: "items.book",select:"price discountPrice discount"});
-        // console.log(cart);
+        let cart = await CartModel.findOne({user});
+        // console.log(cart.items);
+        if(!cart) return null
+        let orderValue = 0
+        const newCartItems = await Promise.all(cart.items.map(async (item) => {
+            const book = await BookModel.findById(item._id);
+            if (book) {
+                orderValue += book.price;
+                return item;
+            }
+            return null;
+        }));
+
+        // Filter out any null values from the newCartItems array
+        cart.items = newCartItems.filter(item => item !== null)
+        await cart.populate({path:"items",select: "title price discountPrice discount",populate:{path:"author frontCover"}});
+        cart.orderValue = orderValue;
+        cart.total = orderValue;
+        await cart.save();
         return cart
     }
 

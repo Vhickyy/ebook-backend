@@ -6,6 +6,7 @@ class WishlistController {
 
     async createWishlist(req,res){
         const wishlist = await wishlistService.createWishlist({user:req.user.userId,book:req.body.book},res);
+        // console.log({wishlist});
         return res.status(201).json({success:true,message:"Wishlist Created Successfully",data:wishlist});
     }
 
@@ -18,7 +19,8 @@ class WishlistController {
 
     async removeWishlistItem (req,res) {
         const wishlist = await wishlistService.removeWishlistItem(req.user.userId,req.params.id);
-        return res.status(200).json({success:true,message:'Item Deleted Successfully',data:wishlist})
+        if(!wishlist) return res.status(400).json({success:false,message:"Error removing item from wishlist."})
+        return res.status(200).json({success:true,message:'Item Deleted Successfully'})
     }
 
 

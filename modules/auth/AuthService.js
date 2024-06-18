@@ -34,7 +34,7 @@ class AuthService {
     async loginUser ({email,password,uuid},res) {
         const user = await UserModel.findOne({email});
         const validPassword = await comparePassword(password,user?.password);
-        // console.log("ji");
+        
         if(!user || !validPassword){
             res.status(400);
             throw new Error("Provide Valid Credentials")
@@ -59,11 +59,13 @@ class AuthService {
 
         // check if annon is in lib beofre merging
         const lib = await LibraryModel.find({user:user._id});
-        console.log({lib});
+
+
+        // ------------- Remove bought courses from anonymous cart --------------- //
         if(lib.length){
-            
             let inLib = [];
             let strCart = [];
+
             if(annonymousCart){
                 for(let i = 0; i < annonymousCart.items.length; i++){
                     strCart.push(annonymousCart.items[i].toString());
@@ -75,9 +77,9 @@ class AuthService {
                         inLib.push(item.book.toString())
                     }
                 }
-                // console.log('here');
+
+
                 if(strCart.length === inLib.length){
-                    // annonymousCart = await annonymousCart.deleteOne();
                     annonymousCart = [];
                 }else{
                     const newCartSet = strCart.filter(item => !inLib.includes(item));
@@ -87,25 +89,27 @@ class AuthService {
                     await annonymousCart.populate("items","price")
                 }
             }
-           
         }
 
         let cart = await CartModel.findOne({user:user._id}).populate("items","price");
 
         if(annonymousCart && annonymousCart.items){
+            await annonymousCart.populate("items","price")
             const merge = [...(annonymousCart ? annonymousCart.items : []),...(cart ? cart.items : [])];
+            console.log({merge});
             let mergeCarts = {};
             for(let i = 0; i < merge.length; i++){
                 if(!mergeCarts[merge[i]._id.toString()]){
+                    console.log( merge[i].price,mergeCarts[merge[i]._id.toString()]);
                     mergeCarts[merge[i]._id.toString()] = merge[i].price;
                 }
             }
+
             // check if an author added his book to annonymous cart because author shoulg not buy their book
             if(!cart){
                 const {orderValue,discount,total} = annonymousCart;
                 cart = await CartModel.create({user:user._id,items:Object.keys(mergeCarts),orderValue,discount,total})
             }else{
-                
                 const orderValue = Object.values(mergeCarts).reduce((acc,val) => acc += val, 0);
                 cart.items = Object.keys(mergeCarts); 
                 cart.orderValue = orderValue;
@@ -121,7 +125,6 @@ class AuthService {
         }else{
             cart = [];
         }
-        // console.log({user,cart});
         return {user,cart}
     }
 

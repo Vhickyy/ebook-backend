@@ -12,7 +12,6 @@ class AuthController {
     }
 
     async loginUser (req,res) {
-        console.log('hjhdjdh');
         const {email,password,uuid} = req.body;
         const {user,cart} = await authService.loginUser({email,password,uuid},res);
         const token = generateJWT(user._id,user.role);
@@ -41,7 +40,7 @@ class AuthController {
 
     async forgotPassword (req,res) {
         const user = await authService.forgotPassword(req.body.email);
-        if(!user) return res.status(404).json({success:false, message:"Invalid Email"});
+        if(!user) return res.status(404).json({success:false, message:"Provide valid email."});
         return res.status(200).json({success:true, message:`Code sent to ${req.body.email}`})
     }
 
@@ -60,8 +59,9 @@ class AuthController {
     }
 
     async resetPassword (req,res) {
-        const {newPassword, email} = req.body;
-        if(!newPassword) return res.status(400).json({success:false, message:"Provide all fields."});
+        const {newPassword, confirmPassword, email} = req.body;
+        if((!newPassword || !confirmPassword)) return res.status(400).json({success:false, message:"Password is required."});
+        if((newPassword !== confirmPassword)) return res.status(400).json({success:false, message:"Password do not match."});
         const result = await authService.resetPassword(newPassword,email);
         if(!result) return res.status(404).json({success:false, message:"Invalid Email"});
         return res.status(200).json({success:true, message:`Password changed successfully`})

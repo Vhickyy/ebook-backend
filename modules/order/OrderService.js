@@ -19,7 +19,8 @@ class OrderService {
             const {email,fullname} = await UserModel.findById({_id:user});
             const {data} = await paymentController.initializePayment({amount:book.price,email,name:fullname});
             
-            await OrderModel.create({user:user,items:[bookId],orderValue:book.price,total:book.price,discount:book.discount,paymentReference: data.reference});
+            // await OrderModel.create({user:user,items:[bookId],orderValue:book.price,total:book.price,discount:book.discount,paymentReference: data.reference});
+            await OrderModel.create({user:user,book:bookId,orderValue:book.price,total:book.price,discount:book.discount,paymentReference: data.reference});
             
             return data;
         }
@@ -30,41 +31,55 @@ class OrderService {
         const {fullname,email} = cart.user;
         const {data} = await paymentController.initializePayment({amount:total,email,name:fullname});
         const {_id,...cartData} = cart.toJSON();
-        await OrderModel.create({...cartData,paymentReference: data.reference});
+
+        for (const book of cart.items) {
+            await OrderModel.create({
+                user: cart.user._id,
+                book: book._id,
+                orderValue: book.price,
+                total: book.price,
+                discount: book.discount,
+                paymentReference: data.reference,
+            });
+        }
+        // await OrderModel.create({...cartData,paymentReference: data.reference});
         return data;
 
     }
 
     async verifyOrder (reference,user,res) {
         const verifyPayment = await paymentController.verifyPayment(reference);
-        const order = await OrderModel.findOne({user,paymentReference:reference});
-        if(!order) return false;
+        const orders = await OrderModel.find({user,paymentReference:reference});
+        if(!orders) return false;
         
-        if(order.status != "pending"){
+        if(orders[0].status != "pending"){
             res.status(400);
             throw new Error("Orders has already been attempted for these items.")
         }
         
         if(verifyPayment.data.status == "success"){
-            order.status = "purchased";
-            const save = order.save();
-            const updateBookPromises = order.items.map(item => {
-                return BookModel.findByIdAndUpdate(item, { $inc: { sold: 1 } }, { new: true })
+            for (const order of orders) {
+                order.status = "purchased";
+                await order.save();
+            }
+            const updateBookPromises = orders.map(item => {
+                return BookModel.findByIdAndUpdate({_id:item.book}, { $inc: { sold: 1 } }, { new: true })
             }
             );
 
-            const createLibraryPromises = order.items.map(item =>
-                LibraryModel.create([{ user, book: item }])
+            const createLibraryPromises = orders.map(item =>
+                LibraryModel.create([{ user, book: item.book }])
             );
 
-            await Promise.all([...updateBookPromises, ...createLibraryPromises,save]);
-
-            if(order.items.length == 1){
+            await Promise.all([...updateBookPromises, ...createLibraryPromises]);
+            console.log({orders});
+            if(orders.length == 1){
                 const cart = await CartModel.findOneAndUpdate(
                     { user },
-                    { $pull: { items: order.items[0] }, $inc: { total: -order.total, orderValue: -order.orderValue } },
+                    { $pull: { items: orders[0].book }, $inc: { total: -orders[0].total, orderValue: -orders[0].orderValue } },
                     { new: true }
                 );
+                // console.log({cart});
                 if(!cart.items.length) {
                     await cart.deleteOne();
                 }
@@ -74,14 +89,19 @@ class OrderService {
             return true;
 
         } else{
-            order.status = "failed";
-            await order.save();
-            return false
+            for (const order of orders) {
+                order.status = "failed";
+                await order.save();
+            }
+            return false;
         }
     }
 
     async getAllOrdersForUser (user) {
-        const orders = await OrderModel.find({user});
+        const orders = await OrderModel.find({user}).populate({
+            path: 'book',
+            select: 'title frontCover', 
+        });
         return orders;
     }
 

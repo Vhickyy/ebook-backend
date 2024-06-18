@@ -1,5 +1,6 @@
 const notFoundHandler = (req,res) => {
     // console.log("req");
+    console.log("404");
     return res.status(404).json({sucess: false, message: "Route not found"});
 }
 

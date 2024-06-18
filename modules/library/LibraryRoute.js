@@ -7,7 +7,7 @@ const libraryController = new LibraryController;
 
 
 LibraryRouter.get("/", authMiddleware,libraryController.getLibrary);
-// LibraryRouter.get("/",authMiddleware,libraryController.getCart);
+LibraryRouter.get("/:id",authMiddleware,libraryController.getPdf);
 // LibraryRouter.patch("/:id",authMiddleware,libraryController.removeCartItem);
 // LibraryRouter.delete("/:id",authMiddleware,libraryController.clearCart);
 

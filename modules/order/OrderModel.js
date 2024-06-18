@@ -29,9 +29,13 @@ const OrderSchema = mongoose.Schema({
         ref: 'User',
         required: true
     },
-    items: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "Book"
+    // items: {
+    //   type: [mongoose.Schema.Types.ObjectId],
+    //   ref: "Book"
+    // },
+    book:{
+      type: mongoose.Schema.Types.ObjectId,
+        ref: "Book"
     },
     orderValue:{
       type: Number

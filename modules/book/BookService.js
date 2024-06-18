@@ -6,7 +6,7 @@ import AnnonymousCartModel from "../anonymousCart/AnonymousCartModel.js";
 import BookModel from "./BookModel.js";
 import cloudinay from "cloudinary"
 import fs from "fs/promises"
-import {  uploadToS3 } from "../../services/cloudinary.js";
+import { uploadToS3 } from "../../services/cloudinary.js";
 
 class BookService {
 
@@ -43,7 +43,7 @@ class BookService {
             res.status(424)
             throw new Error("Error occurred while uploading files." );
         }
-
+        console.log("huie");
         const [pdfResult, frontCoverResult, backCoverResult] = results.map(result => result.value);
         console.log({pdfResult});
 
@@ -113,7 +113,8 @@ class BookService {
             books = await BookModel.find(query).skip(skip).limit(limit).populate({ path: "author", select: "fullname" });
             const totalBooks = await BookModel.countDocuments(query);
             const pageSize = Math.ceil(totalBooks / limit);
-            books = books?.map((book,i) => wishlist.items.includes(book._id) ? {...book._doc,inWishlist:true} : {...book._doc,inWishlist:false});
+            console.log({wishlist,books});
+            books = books?.map((book,i) => wishlist?.items.includes(book._id) ? {...book._doc,inWishlist:true} : {...book._doc,inWishlist:false});
             // const signedBooks = await Promise.all(
             //     books.map(async (book) => {
             //         const pdfUrl = await getImage(`pdf/${book.pdf.image}`)
@@ -128,7 +129,6 @@ class BookService {
             //         };
             //     })
             //   );
-            console.log({books});
             return {books,pageSize}
         } 
         books = await BookModel.find(query).skip(skip).limit(limit).populate({ path: "author", select: "fullname" });
@@ -136,10 +136,12 @@ class BookService {
         const pageSize = Math.ceil(totalBooks / limit);
         // const signedBooks = await Promise.all(
         //     books.map(async (book) => {
-        //         const pdfUrl = await getImage(`pdf/${book.pdf.image}`)
-        //             const frontUrl = await getImage(`image/${book.frontCover.image}`)
-        //             const backUrl = await getImage(`image/${book.backCover.image}`)
-        //         // console.log({pdfUrl});
+        //         const pdfUrl = await getImage(`${book.pdf.image}`)
+        //             const frontUrl = await getImage(`${book.frontCover.image}`)
+        //             const backUrl = await getImage(`${book.backCover.image}`)
+        //         // const pdfUrl = await getImage(`pdf/${book.pdf.image}`)
+        //         //     const frontUrl = await getImage(`image/${book.frontCover.image}`)
+        //         //     const backUrl = await getImage(`image/${book.backCover.image}`)
         //         return {
         //             ...book._doc,
         //             pdf: { ...book.pdf._doc, imageUrl: pdfUrl },
@@ -152,7 +154,7 @@ class BookService {
         //   res.json(signedBooks);
         // console.log("hi");
         // console.log({signedBooks});
-        console.log({books});
+        // console.log({books});
         return {books,pageSize};
     }
 
@@ -163,9 +165,10 @@ class BookService {
     }
 
     async getBook (req){
+        console.log("fetch");
         // console.log(_id);
         let book = await BookModel.findById({_id:req.params.id}).populate("author").populate("reviews");
-        console.log({book});
+        // console.log({book});
         // check if there is a user and if the book is in their library or cart then they should read and not buy it, if they started readin, they should continue reading.
         if(req?.user){
             const {userId} = req.user;

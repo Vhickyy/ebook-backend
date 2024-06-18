@@ -14,14 +14,17 @@ export const uploadToS3 = async (file,filename, mimeType) => {
             }
         })
 
+        // const fileName = !mimeType.includes("pdf") ? `${filename}` : `${filename}`
+        const fileName = !mimeType.includes("pdf") ? `image/${filename}` : `pdf/${filename}`
+
         const command = new PutObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET,
-            Key: !mimeType.includes("pdf") ? `image/${filename}` : `pdf/${filename}`,
+            Key: fileName,
             Body: file.buffer,
             ContentType: mimeType
         })
-        const fileLocation = !mimeType.includes("pdf") ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/image/${filename}` : `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/pdf/${filename}`
-        // console.log("hry");
+        const fileLocation = !mimeType.includes("pdf") ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/image/${filename}` : `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/pdf/${filename}`;
+
         await s3.send(command)
         return fileLocation;
 
@@ -33,7 +36,7 @@ export const uploadToS3 = async (file,filename, mimeType) => {
 
 
 // export const getImage = async (filename) => {
-//     console.log(filename);
+//     console.log({gI:filename});
 //     const s3 = new S3Client({
 //         region: process.env.AWS_REGION,
 //         credentials:{

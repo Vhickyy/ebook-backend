@@ -42,6 +42,7 @@ export const resendOtpValidation = validationLayer([
 
 export const paramIdValidation = validationLayer([
     param("id").custom(async (id ) => {
+        console.log(id);
         const validId = mongoose.Types.ObjectId.isValid(id);
         if(!validId){
             throw new Error(`Invalid id - ${id}`);

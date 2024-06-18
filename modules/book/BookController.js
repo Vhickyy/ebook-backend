@@ -16,14 +16,14 @@ class BookController {
 
     async getAllBooks (req,res){
         const {books,pageSize} = await bookService.getAllBooks(req);
-        return res.status(201).json({success: true,message:"Books sent successfully", data: {books,length:books.length,pageSize:pageSize}})
+        return res.status(200).json({success: true,message:"Books sent successfully", data: {books,length:books.length,pageSize:pageSize}})
     }
 
     async getAllAuthorBooks (req,res){
         // console.log(req.body.id);
         const books = await bookService.getAllAuthorBooks(req.params.id);
         console.log(books);
-        return res.status(201).json({success: true,message:"Books sent successfully", data: {books}})
+        return res.status(200).json({success: true,message:"Books sent successfully", data: {books}})
     }
 
     async getBook (req,res){
@@ -32,13 +32,13 @@ class BookController {
         if(!book){
             return res.status(404).json({success: false, message: "No such book"})
         }
-        return res.status(201).json({success: true,message:"Book sent successfully", data: book})
+        return res.status(200).json({success: true,message:"Book sent successfully", data: book})
     }
 
     async updateBook (req,res) {
         console.log("herrr");
         const book = await bookService.updateBook(req,res);
-        return res.status(201).json({success: true,message:"Book updated Successfully", data: book});
+        return res.status(200).json({success: true,message:"Book updated Successfully", data: book});
     }
 
     async deleteBook (req,res) {

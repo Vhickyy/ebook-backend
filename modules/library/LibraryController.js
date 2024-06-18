@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import LibraryService from "./LibraryService.js";
 
 const libraryService = new LibraryService();
@@ -17,6 +18,13 @@ class LibraryController {
 
     async addRecentlyOpened () {
 
+    }
+
+    async getPdf (req,res) {
+        if(!req.params.id || !mongoose.isValidObjectId(req.params.id ))return res.status(400).json({success:false,message:"Provide valid Id"});
+        const book = await libraryService.getPdf(req.params.id,req.user.userId);
+        if(!book) return res.status(404).json({success:false,message:"No book found in your library."});
+        return res.status(200).json({success:true,message:"Book sent succesfully",data:book})
     }
 
 }

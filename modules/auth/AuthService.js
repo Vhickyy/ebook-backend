@@ -1,4 +1,5 @@
-import { generateJWT } from "../../utils/jwt.js";
+import { uploadToS3 } from "../../services/cloudinary.js";
+import { generateJWT, verifyToken } from "../../utils/jwt.js";
 import { comparePassword, encryptPassword } from "../../utils/password.js";
 import { generateOtp } from "../../utils/userUtil.js";
 import { sendEmail } from "../../utils/utils.js";
@@ -13,21 +14,50 @@ const profileService = new ProfileService();
 
 class AuthService {
 
-    async registerUser (data,res) {
+    async registerUser (data,profilePic,res) {
         const userExist = await UserModel.findOne({email:data.email});
+        console.log("ww");
         if(userExist){
             res.status(400);
-            throw new Error("Email already in use!")
+            throw new Error("Email already exist for this app.!")
         }
         data.password = await encryptPassword(data.password);
+        
+
+        // =============== Upload Profile Picture ================== //
+        let upload;
+        if(profilePic){
+            const picName = `${Date.now()}.${profilePic.originalname.split('.').pop()}`;
+            try {
+                upload = await uploadToS3(profilePic,picName,profilePic.mimetype);
+            } catch (error) {
+                // console.log(error);
+            }
+        }
+        data.profilePic = upload ? upload : null;
+
+
+        // ============ Save User To DB And Create Profile ============ //
+        const userData = await UserModel.create({...data});
+        data.user = userData._id;
+        await profileService.createProfile(data,res);
+        
+        
+        // ================ Generate Token And Code for Email Code Verification ================== //
+        const token = generateJWT(userData._id,userData.role,'2m');
         const code =  generateOtp();
-        const userData = await UserModel.create({...data,otpEmailVerify:{code,expire: new Date(Date.now() + (1000 * 60 * 5))}});
-        await profileService.createProfile(data?.interest,userData._id,data?.profile,res)
+        userData.otpEmailVerify = code
+        userData.verifyOtpToken = token;
+        await userData.save();
+
         // const {password, ...user} = userData._doc;
-        // send mail
+
+
+        // ==================== Send Mail ================== //
         // await sendEmail({subject:"Verify Email",email:data.email,message:code})
-        const {password, forgotPassword, ...user} = userData.toJSON();
-        return user;
+        const {otpEmailVerify, ..._user} = userData.toJSON();
+        console.log("hey");
+        return true;
     }
 
 
@@ -49,28 +79,29 @@ class AuthService {
             if(cart) await cart.populate({path:"items",populate:{path:"author frontCover"}});
             return {user,cart};
         }
-        let annonymousCart = await AnonymousCartModel.findOne({uuid});
-        // for(let i = 0; i < annonymousCart.length; i++){
 
-        // }
-        // if(annonymousCart.removedAt < Date.now()){
-        //     annonymousCart = []
-        // }
+        let annonymousCart = await AnonymousCartModel.findOne({uuid}).populate({path:"items",populate:{path:"author _id"}});
 
-        // check if annon is in lib beofre merging
+        // ============= Check if an author added his book to annonymous cartand remove it ============ //
+        if(user?.role == 'author' && annonymousCart?.items){
+            annonymousCart.items = annonymousCart.items.filter(item => {
+                return item.author._id.toString() !== user._id.toString()
+            })
+        }
+
+
+        // =========== Check If A Book Bought By User Is In Anonymous Cart ================== //
         const lib = await LibraryModel.find({user:user._id});
 
-
-        // ------------- Remove bought courses from anonymous cart --------------- //
         if(lib.length){
             let inLib = [];
             let strCart = [];
-
-            if(annonymousCart){
+            
+            // ============ Remove bought book from anonymous cart ============ //
+            if(annonymousCart?.items.length){
                 for(let i = 0; i < annonymousCart.items.length; i++){
                     strCart.push(annonymousCart.items[i].toString());
                     const item  = lib.find(lib => {
-                        // console.log(lib.book.toString(),annonymousCart.items[i].toString());
                         return lib.book.toString() == annonymousCart.items[i].toString()
                     });
                     if(item){
@@ -78,37 +109,39 @@ class AuthService {
                     }
                 }
 
-
                 if(strCart.length === inLib.length){
                     annonymousCart = [];
                 }else{
                     const newCartSet = strCart.filter(item => !inLib.includes(item));
-                    console.log({newCartSet});
                     annonymousCart.items = newCartSet;
                     annonymousCart = await annonymousCart.save();
                     await annonymousCart.populate("items","price")
                 }
             }
+
         }
 
         let cart = await CartModel.findOne({user:user._id}).populate("items","price");
 
-        if(annonymousCart && annonymousCart.items){
+
+        // =========== Merge Anonymous Cart with Main Cart =========== //
+
+        if(annonymousCart?.items.length){
             await annonymousCart.populate("items","price")
+
             const merge = [...(annonymousCart ? annonymousCart.items : []),...(cart ? cart.items : [])];
-            console.log({merge});
+            
             let mergeCarts = {};
             for(let i = 0; i < merge.length; i++){
                 if(!mergeCarts[merge[i]._id.toString()]){
-                    console.log( merge[i].price,mergeCarts[merge[i]._id.toString()]);
                     mergeCarts[merge[i]._id.toString()] = merge[i].price;
                 }
             }
 
-            // check if an author added his book to annonymous cart because author shoulg not buy their book
             if(!cart){
                 const {orderValue,discount,total} = annonymousCart;
                 cart = await CartModel.create({user:user._id,items:Object.keys(mergeCarts),orderValue,discount,total})
+
             }else{
                 const orderValue = Object.values(mergeCarts).reduce((acc,val) => acc += val, 0);
                 cart.items = Object.keys(mergeCarts); 
@@ -118,7 +151,8 @@ class AuthService {
                 await cart.save();
             }
         }
-
+        
+        console.log({annonymousCart},"here",{uuid});
         await AnonymousCartModel.findOneAndDelete({uuid});
         if(cart){
             await cart.populate({path:"items",populate:{path:"author frontCover"}});
@@ -135,23 +169,27 @@ class AuthService {
         return token;
     }
 
-    async verifyEmail (email,code,res) {
-        const user = await UserModel.findOne({email});
-        if(!user){
-            res.status(404);
-            throw new Error("Invalid Email")
-        } 
-        if(user.otpEmailVerify.code != code){
+    async verifyEmail (userData,res) {
+        let token;
+        try {
+            token = verifyToken(userData.token);
+        } catch (error) {
+            res.status(400);
+            throw new Error("Expired Code.")
+        }
+        const {userId} = token;
+        const user = await UserModel.findById({_id:userId});
+        if(user.isVerified){
+            res.status(400);
+            throw new Error("User Already Verified")
+        }
+        
+        if(user.otpEmailVerify != userData.code){
             return false;
         }
-        // check if code is still valid
-        const expiredOtp = new Date(user.otpEmailVerify.expire) < new Date(Date.now());
-        if(expiredOtp){
-            res.status(404);
-            throw new Error("Otp Expired")
-        }
         user.isVerified = true;
-        user.otpEmailVerify = {code:null,expire:null};
+        user.otpEmailVerify = '';
+        user.verifyOtpToken = '';
         await user.save();
         return true;
     }
@@ -160,54 +198,72 @@ class AuthService {
         const user = await UserModel.findOne({email});
         if(!user) return false;
         const code =  generateOtp();
+        const token = generateJWT(user._id,user.role,'2m');
         // send mail
         // await sendEmail({subject:"Verify Email",email,message:code});
-        user.otpEmailVerify = {code,expire: new Date(Date.now() + (1000 * 60 * 5))};
+        console.log({code,token});
+        user.otpEmailVerify = code;
+        user.verifyOtpToken = token;
         await user.save();
-        return true;
+        console.log('hu');
+        return {code,token};
     }
 
     async forgotPassword (email) {
         const user = await UserModel.findOne({email});
         if(!user) return false;
-        const forgotPasswordOtp =  generateOtp();
-        user.forgotPassword = {code:forgotPasswordOtp,expire:new Date(Date.now() + (1000 * 60 * 5))};
+        // const code =  generateOtp();
+        const token = generateJWT(user._id,user.role,'2m');
+        // user.otpforgotPassword = code;
+        user.forgotPasswordToken = token;
         // send mail
         // await sendEmail({subject:"Verify Email",email,message:forgotPasswordOtp})
         await user.save();
-        return true
-    }
-
-    async verifyForgotPasswordCode (email,code,res) {
-        const user = await UserModel.findOne({email});
-        if(!user){
-            res.status(404);
-            throw new Error("Invalid Email")
-        }
-        if(user.forgotPassword.code != code)return false
-        const expiredOtp = new Date(user.forgotPassword.expire) < new Date(Date.now());
-        if(expiredOtp){
-            res.status(404);
-            throw new Error("Otp Expired")
-        }
-        user.forgotPasswordOtp = {code:null,expire:null};;
-        await user.save();
         return true;
     }
 
-    async resendForgotPasswordOtp (email) {
-        const user = await UserModel.findOne({email});
-        if(!user) return false;
-        const forgotPasswordOtp =  generateOtp();
-        // send mail
-        // await sendEmail({subject:"Reset Password",email,message:forgotPasswordOtp});
-        user.forgotPassword = {code:forgotPasswordOtp,expire:new Date(Date.now() + (1000 * 60 * 5))};
-        await user.save();
-        return true;
-    }
+    // async verifyForgotPasswordCode (usertoken,code,res) {
+    //     console.log({usertoken});
+    //     let token;
+    //     try {
+    //         token = verifyToken(usertoken);
+    //     } catch (error) {
+    //         res.status(400);
+    //         throw new Error("Expired Code.")
+    //     }
+    //     const {userId} = token;
+    //     const user = await UserModel.findById({_id:userId});
 
-    async resetPassword (newPassword, email) {
-        const user = await UserModel.findOne({email}); 
+    //     if(user.otpforgotPassword !== code) return false
+    //     user.otpforgotPassword = null;
+    //     user.forgotPasswordToken = '';
+    //     await user.save();
+    //     return true;
+    // }
+
+    // async resendForgotPasswordOtp (email) {
+    //     const user = await UserModel.findOne({email});
+    //     if(!user) return false;
+    //     const code =  generateOtp();
+    //     const token = generateJWT(user._id,user.role,'2m');
+    //     user.otpforgotPassword = code;
+    //     user.forgotPasswordToken = token;
+    //     // send mail
+    //     // await sendEmail({subject:"Reset Password",email,message:forgotPasswordOtp});
+    //     await user.save();
+    //     return {code,token};
+    // }
+
+    async resetPassword (newPassword, usertoken,res) {
+        let token;
+        try {
+            token = verifyToken(usertoken);
+        } catch (error) {
+            res.status(400);
+            throw new Error("Invalid token.")
+        }
+        const {userId} = token;
+        const user = await UserModel.findById({_id:userId});
         if(!user)return false;
         user.password = await encryptPassword(newPassword);
         await user.save();

@@ -115,46 +115,12 @@ class BookService {
             const pageSize = Math.ceil(totalBooks / limit);
             console.log({wishlist,books});
             books = books?.map((book,i) => wishlist?.items.includes(book._id) ? {...book._doc,inWishlist:true} : {...book._doc,inWishlist:false});
-            // const signedBooks = await Promise.all(
-            //     books.map(async (book) => {
-            //         const pdfUrl = await getImage(`pdf/${book.pdf.image}`)
-            //         const frontUrl = await getImage(`image/${book.frontCover.image}`)
-            //         const backUrl = await getImage(`image/${book.backCover.image}`)
-            //         // console.log({pdfUrl});
-            //         return {
-            //             ...book,
-            //             pdf: { ...book.pdf, imageUrl: pdfUrl },
-            //             frontCover: { ...book.frontCover, imageUrl: frontUrl },
-            //             backCover: { ...book.backCover, imageUrl: backUrl }
-            //         };
-            //     })
-            //   );
+            
             return {books,pageSize}
         } 
         books = await BookModel.find(query).skip(skip).limit(limit).populate({ path: "author", select: "fullname" });
         const totalBooks = await BookModel.countDocuments(query);
         const pageSize = Math.ceil(totalBooks / limit);
-        // const signedBooks = await Promise.all(
-        //     books.map(async (book) => {
-        //         const pdfUrl = await getImage(`${book.pdf.image}`)
-        //             const frontUrl = await getImage(`${book.frontCover.image}`)
-        //             const backUrl = await getImage(`${book.backCover.image}`)
-        //         // const pdfUrl = await getImage(`pdf/${book.pdf.image}`)
-        //         //     const frontUrl = await getImage(`image/${book.frontCover.image}`)
-        //         //     const backUrl = await getImage(`image/${book.backCover.image}`)
-        //         return {
-        //             ...book._doc,
-        //             pdf: { ...book.pdf._doc, imageUrl: pdfUrl },
-        //             frontCover: { ...book.frontCover._doc, imageUrl: frontUrl },
-        //             backCover: { ...book.backCover._doc, imageUrl: backUrl }
-        //         };
-        //     })
-        //   );
-      
-        //   res.json(signedBooks);
-        // console.log("hi");
-        // console.log({signedBooks});
-        // console.log({books});
         return {books,pageSize};
     }
 
@@ -172,9 +138,6 @@ class BookService {
         // check if there is a user and if the book is in their library or cart then they should read and not buy it, if they started readin, they should continue reading.
         if(req?.user){
             const {userId} = req.user;
-        //     if (role === "author") {
-        //         query.author = { $ne: req.user.userId };
-        //     }
 
             //------ find if book  in library first to display if bought or not ----------//
             const library = await LibraryModel.findOne({user:userId,book:req.params.id});
@@ -261,3 +224,20 @@ class BookService {
 }
 
 export default BookService;
+
+
+
+// const signedBooks = await Promise.all(
+            //     books.map(async (book) => {
+            //         const pdfUrl = await getImage(`pdf/${book.pdf.image}`)
+            //         const frontUrl = await getImage(`image/${book.frontCover.image}`)
+            //         const backUrl = await getImage(`image/${book.backCover.image}`)
+            //         // console.log({pdfUrl});
+            //         return {
+            //             ...book,
+            //             pdf: { ...book.pdf, imageUrl: pdfUrl },
+            //             frontCover: { ...book.frontCover, imageUrl: frontUrl },
+            //             backCover: { ...book.backCover, imageUrl: backUrl }
+            //         };
+            //     })
+            //   );

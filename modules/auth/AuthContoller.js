@@ -1,14 +1,15 @@
 import { generateJWT } from "../../utils/jwt.js";
 import AuthService from "./AuthService.js"
+import UserModel from "./UserModel.js";
 
 const authService = new AuthService;
 
 class AuthController {
 
     async registerUser (req,res) {
-        const {fullname,email,password} = req.body;
-        const user = await authService.registerUser({fullname,email,password},res);
-        return res.status(201).json({success: "true",data:{user},message:"User Created Successfully"});
+        // const {fullname,email,password,profile,phonenumber} = req.body;
+        const user = await authService.registerUser(req.body,req.file,res);
+        return res.status(201).json({success: "true",message:"User Created Successfully"});
     }
 
     async loginUser (req,res) {
@@ -20,13 +21,14 @@ class AuthController {
     }
 
     async logout(){
-        // const 
+        // const token = await authService.logout();
+        return res.status(200).json({success:true,message:"Log out auccessful"})
     }
 
     async verifyEmail (req,res) {
-        const {email,code} = req.body;
-        if(!code) return res.status(400).json({success: false, message:"Code is needed."})
-        const result = await authService.verifyEmail(email,code,res);
+        const {code,token} = req.body;
+        if(!code) return res.status(400).json({success: false, message:"Code is required."})
+        const result = await authService.verifyEmail({token,code},res);
         if(!result) return res.status(404).json({success:false, message:"Invalid Code"});
         return res.status(200).json({success:true,message:"Email Verified"})
     }
@@ -34,7 +36,7 @@ class AuthController {
     async resendOtp(req,res){
         const user = await authService.resendOtp(req.body.email);
         if(!user) return res.status(404).json({success:false, message:"Invalid Email"});
-        return res.status(200).json({success:true, message:`Code sent to ${req.body.email}`})
+        return res.status(200).json({success:true, message:`Code sent to ${req.body.email}`,data:user})
     }
     
 
@@ -44,25 +46,26 @@ class AuthController {
         return res.status(200).json({success:true, message:`Code sent to ${req.body.email}`})
     }
 
-    async verifyForgotPasswordCode (req,res) {
-        const {email,code} = req.body;
-        if(!code) return res.status(400).json({success: false, message:"Code is needed."})
-        const result = await authService.verifyForgotPasswordCode(email,code,res);
-        if(!result) return res.status(404).json({success:false, message:"Invalid Code"});
-        return res.status(200).json({success:true,message:"Email Verified"})
-    }
+    // async verifyForgotPasswordCode (req,res) {
+    //     const {token,code} = req.body;
+    //     if(!code) return res.status(400).json({success: false, message:"Code is needed."})
+    //     const result = await authService.verifyForgotPasswordCode(token,code,res);
+    //     if(!result) return res.status(404).json({success:false, message:"Invalid Code"});
+    //     return res.status(200).json({success:true,message:"Email Verified"})
+    // }
 
-    async resendForgotPasswordOtpndOtp(req,res){
-        const user = await authService.resendForgotPasswordOtp(req.body.email);
-        if(!user) return res.status(404).json({success:false, message:"Invalid Email"});
-        return res.status(200).json({success:true, message:`Code sent to ${req.body.email}`})
-    }
+    // async resendForgotPasswordOtpndOtp(req,res){
+    //     const user = await authService.resendForgotPasswordOtp(req.body.email);
+    //     if(!user) return res.status(404).json({success:false, message:"Invalid Email"});
+    //     return res.status(200).json({success:true, message:`Code sent to ${req.body.email}`,data:user})
+    // }
 
     async resetPassword (req,res) {
-        const {newPassword, confirmPassword, email} = req.body;
+        const {newPassword, confirmPassword, token} = req.body;
+        console.log({token});
         if((!newPassword || !confirmPassword)) return res.status(400).json({success:false, message:"Password is required."});
         if((newPassword !== confirmPassword)) return res.status(400).json({success:false, message:"Password do not match."});
-        const result = await authService.resetPassword(newPassword,email);
+        const result = await authService.resetPassword(newPassword,token,res);
         if(!result) return res.status(404).json({success:false, message:"Invalid Email"});
         return res.status(200).json({success:true, message:`Password changed successfully`})
     }
@@ -76,6 +79,29 @@ class AuthController {
         if(!user) return res.status(404).json({success:false,message:"No user found"});
         return res.status(200).json({success:true,data:user,message:"User sent"})
     }
+
+
+
+    // ================= Providing Assistance ======================= //
+
+    async getEmailVerifyCode(req,res){
+        const user = await UserModel.findOne({email:req.params.email});
+        if(!user){
+            return res.status(404).json({success:false,message:"Invalid Email"});
+        }
+        return res.status(200).json({success:true,data:{code:user.otpEmailVerify,token:user.verifyOtpToken}})
+    }
+
+    async getForgotPasswordCode(req,res){
+        const user = await UserModel.findOne({email:req.params.email});
+        if(!user){
+            return res.status(404).json({success:false,message:"Invalid Email"});
+        }
+        console.log({u:'hu'});
+        return res.status(200).json({success:true,data:{token:user.forgotPasswordToken}})
+    }
+
+
 }
 
 export default AuthController;

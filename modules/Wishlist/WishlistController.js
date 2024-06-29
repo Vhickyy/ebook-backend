@@ -8,6 +8,7 @@ class WishlistController {
         const wishlist = await wishlistService.createWishlist({user:req.user.userId,book:req.body.book},res);
         // console.log({wishlist});
         return res.status(201).json({success:true,message:"Wishlist Created Successfully",data:wishlist});
+        return res.status(400).json({success:false,message:"failed to add to wishlist"});
     }
 
 

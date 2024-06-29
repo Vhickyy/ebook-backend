@@ -2,6 +2,7 @@ import { populate } from "dotenv";
 import BookModel from "../book/BookModel.js";
 import CartModel from "./CartModel.js";
 import LibraryModel from "../library/LibraryModel.js";
+import WishlistModel from "../Wishlist/WishlistModel.js";
 
 class CartService {
     
@@ -47,7 +48,9 @@ class CartService {
 
 
     async getCart(user) {
+
         // pending: think if cart can be gotten by the id after login
+
         let cart = await CartModel.findOne({user});
         // console.log(cart.items);
         if(!cart) return null
@@ -61,14 +64,20 @@ class CartService {
             return null;
         }));
 
+
         // Filter out any null values from the newCartItems array
         cart.items = newCartItems.filter(item => item !== null)
         await cart.populate({path:"items",select: "title price discountPrice discount",populate:{path:"author frontCover"}});
         cart.orderValue = orderValue;
         cart.total = orderValue;
         await cart.save();
+
+        // ================ check if item in cart is in user wishlist ============= //
+        const wishlist = await WishlistModel.findOne({user});
+        cart._doc.items = cart.items?.map((item,i) => wishlist?.items.includes(item._id) ? {...item._doc,inWishlist:true} : {...item._doc,inWishlist:false});
         return cart
     }
+    // inWishlist:true
 
 
     async removeCartItem (user,book) {
@@ -86,8 +95,6 @@ class CartService {
         }
         await cart.save();
         await cart.populate({path:"items",populate:{path:"author frontCover"}});
-        console.log({cart});
-        // await cart.populate("items");
         return cart;
     }
 

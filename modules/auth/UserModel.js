@@ -23,25 +23,27 @@ const userSchema = mongoose.Schema({
         type: String
     },
     otpEmailVerify:{
-        type: {
-            code: Number,
-            expire: Date,
-        },
-        default :{
-            code: null,
-            expire: null
-        }
+        type: Number
     },
-    forgotPassword: {
-        type: {
-            code: Number,
-            expire: Date,
-        },
-        default :{
-            code: null,
-            expire: null
-        }
-    }
+    verifyOtpToken:{
+        type: String
+    },
+    // otpforgotPassword:{
+    //     type: Number
+    // },
+    forgotPasswordToken:{
+        type: String
+    },
+    // forgotPassword: {
+    //     type: {
+    //         code: Number,
+    //         expire: Date,
+    //     },
+    //     default :{
+    //         code: null,
+    //         expire: null
+    //     }
+    // }
 
 },{timestamps:true});
 

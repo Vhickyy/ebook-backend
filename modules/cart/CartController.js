@@ -23,7 +23,7 @@ class CartController {
     async removeCartItem (req,res) {
         const cart = await cartService.removeCartItem(req.user.userId,req.params.id);
         if(!cart) return res.status(404).json({status:false,message:"No item in cart with this id"});
-        return res.status(200).json({success:true,message:'Item Deleted Successfully',data:cart})
+        return res.status(200).json({success:true,message:'Item Deleted Successfully',data:{orderValue:cart.orderValue}})
     }
 
 

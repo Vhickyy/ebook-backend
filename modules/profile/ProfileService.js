@@ -2,12 +2,10 @@ import ProfileModel from "./ProfileModel.js";
 
 class ProfileService {
 
-    async createProfile(interest,user,profilePic,res){
-        const profile = await ProfileModel.create({interest,user,profilePic})
-        if(!profile){
-            res.status(424);
-            throw new Error("An error occured creating profile")
-        }
+    async createProfile(data,res){
+        // console.log({data});
+        const {interest,user,phoneNumber} = data;
+        await ProfileModel.create({interest,user,address:{phoneNumber}});
         return true;
     }
 

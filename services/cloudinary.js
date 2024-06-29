@@ -4,6 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 
 export const uploadToS3 = async (file,filename, mimeType) => {
+    console.log(file,filename, mimeType);
     try {
 
         const s3 = new S3Client({
@@ -32,6 +33,7 @@ export const uploadToS3 = async (file,filename, mimeType) => {
         console.log(error);
         throw error;
     }
+
 }
 
 

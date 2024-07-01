@@ -16,6 +16,7 @@ AuthRouter.post("/resend-otp", authController.resendOtp);
 AuthRouter.post("/forgot-password", authController.forgotPassword);
 AuthRouter.post("/reset-password", authController.resetPassword);
 AuthRouter.get("/user", authMiddleware, authController.getUser);
+AuthRouter.get("/get-author/:authorId", authMiddleware, authController.getAuthor);
 
 
 // ==================== Assist dummy mail route =============== //

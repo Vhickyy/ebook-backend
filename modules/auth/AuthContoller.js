@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { generateJWT } from "../../utils/jwt.js";
 import AuthService from "./AuthService.js"
 import UserModel from "./UserModel.js";
@@ -46,20 +47,6 @@ class AuthController {
         return res.status(200).json({success:true, message:`Code sent to ${req.body.email}`})
     }
 
-    // async verifyForgotPasswordCode (req,res) {
-    //     const {token,code} = req.body;
-    //     if(!code) return res.status(400).json({success: false, message:"Code is needed."})
-    //     const result = await authService.verifyForgotPasswordCode(token,code,res);
-    //     if(!result) return res.status(404).json({success:false, message:"Invalid Code"});
-    //     return res.status(200).json({success:true,message:"Email Verified"})
-    // }
-
-    // async resendForgotPasswordOtpndOtp(req,res){
-    //     const user = await authService.resendForgotPasswordOtp(req.body.email);
-    //     if(!user) return res.status(404).json({success:false, message:"Invalid Email"});
-    //     return res.status(200).json({success:true, message:`Code sent to ${req.body.email}`,data:user})
-    // }
-
     async resetPassword (req,res) {
         const {newPassword, confirmPassword, token} = req.body;
         console.log({token});
@@ -78,6 +65,14 @@ class AuthController {
         const user = await authService.getUser(req);
         if(!user) return res.status(404).json({success:false,message:"No user found"});
         return res.status(200).json({success:true,data:user,message:"User sent"})
+    }
+
+    async getAuthor(req,res){
+        const {authorId } = req.params;
+        if(!authorId || !mongoose.isValidObjectId(authorId)) return res.status(400).json({success:true,message:"Provide a valid author id"})
+        const author = await UserModel.findById({_id:req.params.authorId});
+        if(!author) return res.status(404).json({success:true,message:"No author found for the provided id"})
+        return res.status(200).json({success:true,message:"author detail sent",data:author})
     }
 
 

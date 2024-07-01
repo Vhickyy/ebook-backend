@@ -5,7 +5,6 @@ import CartRouter from "./modules/cart/CartRoute.js";
 import OrderRouter from "./modules/order/OrderRoute.js";
 import ReviewRouter from "./modules/review/ReviewRoute.js";
 import AnnonymousRouter from "./modules/anonymousCart/AnonymousCartRoute.js";
-import cloudinary from "cloudinary"
 import WishlistRouter from "./modules/Wishlist/WishlistRoute.js";
 import PaymentRouter from "./modules/payment/PaymentRouter.js";
 import LibraryRouter from "./modules/library/LibraryRoute.js";
@@ -15,8 +14,8 @@ const appConfig = (app) => {
 
     // test
     // <Move to seperate router file
-    app.get("/api",async (req,res)=>{
-        res.status(200).json({msg:"test"});
+    app.get("/",async (req,res)=>{
+        res.status(200).json({msg:"Welcome to warm-books"});
     })
 
     app.use("/api/v1/auth",AuthRouter);

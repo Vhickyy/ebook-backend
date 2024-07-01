@@ -11,8 +11,8 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({
-    origin: "http://localhost:4200"
-    // origin: "https://warm-book.vercel.app"
+    // origin: "http://localhost:4200"
+    origin: "https://warm-book-node.vercel.app"
 }))
 
 const port = process.env.PORT || 8000;

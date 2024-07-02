@@ -71,7 +71,7 @@ class AuthController {
         const {authorId } = req.params;
         if(!authorId || !mongoose.isValidObjectId(authorId)) return res.status(400).json({success:true,message:"Provide a valid author id"})
         const author = await UserModel.findById({_id:req.params.authorId});
-        if(!author) return res.status(404).json({success:true,message:"No author found for the provided id"})
+        if(!author || author.role !== 'author') return res.status(404).json({success:true,message:"No author found for the provided id"})
         return res.status(200).json({success:true,message:"author detail sent",data:author})
     }
 

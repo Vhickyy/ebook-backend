@@ -19,6 +19,9 @@ const userSchema = mongoose.Schema({
         type: String,
         default: "user"
     },
+    interests: {
+        type: [String],
+    },
     profilePic: {
         type: String
     },
@@ -28,22 +31,13 @@ const userSchema = mongoose.Schema({
     verifyOtpToken:{
         type: String
     },
-    // otpforgotPassword:{
-    //     type: Number
-    // },
     forgotPasswordToken:{
         type: String
     },
-    // forgotPassword: {
-    //     type: {
-    //         code: Number,
-    //         expire: Date,
-    //     },
-    //     default :{
-    //         code: null,
-    //         expire: null
-    //     }
-    // }
+    profileId: {
+        type: mongoose.Types.ObjectId,
+        ref: "Profile"
+    }
 
 },{timestamps:true});
 

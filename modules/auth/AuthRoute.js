@@ -17,6 +17,7 @@ AuthRouter.post("/forgot-password", authController.forgotPassword);
 AuthRouter.post("/reset-password", authController.resetPassword);
 AuthRouter.get("/user", authMiddleware, authController.getUser);
 AuthRouter.get("/get-author/:authorId", authController.getAuthor);
+AuthRouter.post("/become-author", authMiddleware, upload.single('profilePic'), authController.becomeAnAuthor);
 
 
 // ==================== Assist dummy mail route =============== //

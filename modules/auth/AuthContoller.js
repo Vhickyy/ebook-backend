@@ -58,7 +58,16 @@ class AuthController {
     }
 
     async becomeAnAuthor (req,res) {
-        // 
+        const { location, bio, cardInfo, socials} = req.body;
+        console.log({location,bio,cardInfo:JSON.parse(cardInfo)});
+        const {bankName,bankHolder,accountNumber} = JSON.parse(cardInfo);
+        console.log({bankHolder,bankName,accountNumber});
+        if(!bankHolder || !bankName || !accountNumber || !location || !bio) return res.status(400).json({success:false, message: "Bank details, location and bio are required."})
+        req.body.id = req.user.userId;
+        req.body.cardInfo = JSON.parse(cardInfo);
+        if(socials) req.body.socials = JSON.parse(socials)
+        const user = await authService.becomeAnAuthor(req.body,req.file,res)
+        return res.status(200).json({success:true,message:"Author profile success",data:user})
     }
 
     async getUser (req,res) {
@@ -70,7 +79,8 @@ class AuthController {
     async getAuthor(req,res){
         const {authorId } = req.params;
         if(!authorId || !mongoose.isValidObjectId(authorId)) return res.status(400).json({success:true,message:"Provide a valid author id"})
-        const author = await UserModel.findById({_id:req.params.authorId});
+        const author = await UserModel.findById({_id:req.params.authorId}).select('fullname profilePic profileId role').populate('profileId');
+        console.log({author});
         if(!author || author.role !== 'author') return res.status(404).json({success:true,message:"No author found for the provided id"})
         return res.status(200).json({success:true,message:"author detail sent",data:author})
     }

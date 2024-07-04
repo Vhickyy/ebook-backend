@@ -1,16 +1,16 @@
 import mongoose from "mongoose";
 
 const ProfileSchema = mongoose.Schema({
-    address:{
-        type :{
-            phonenumber: Number,
-            country: String
-        },
-        default:{
-            phonenumber: null,
-            country: ""
-        }
-    },
+    // address:{
+    //     type :{
+    //         phonenumber: Number,
+    //         country: String
+    //     },
+    //     default:{
+    //         phonenumber: null,
+    //         country: ""
+    //     }
+    // },
     socials:{
         type: {
             facebook: String,
@@ -23,15 +23,16 @@ const ProfileSchema = mongoose.Schema({
             instagram: null
         }
     },
-    interests: {
-        type: [String],
-    },
     cardInfo: {
         type: {
-            number: String
+            accountName: String,
+            bankHolder: String,
+            bankName: String
         },
         default:{
-            number: ""
+            accountName: String,
+            bankHolder: String,
+            bankName: String
         }
     },
     bio:{

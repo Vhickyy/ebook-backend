@@ -6,6 +6,7 @@ import { sendEmail } from "../../utils/utils.js";
 import AnonymousCartModel from "../anonymousCart/AnonymousCartModel.js";
 import CartModel from "../cart/CartModel.js";
 import LibraryModel from "../library/LibraryModel.js";
+import ProfileModel from "../profile/ProfileModel.js";
 import ProfileService from "../profile/ProfileService.js";
 import UserModel from "./UserModel.js";
 import {Types} from "mongoose";
@@ -16,7 +17,6 @@ class AuthService {
 
     async registerUser (data,profilePic,res) {
         const userExist = await UserModel.findOne({email:data.email});
-        console.log("ww");
         if(userExist){
             res.status(400);
             throw new Error("Email already exist for this app.!")
@@ -35,12 +35,12 @@ class AuthService {
             }
         }
         data.profilePic = upload ? upload : null;
-
+        data.interests = data.interest.split(",");
 
         // ============ Save User To DB And Create Profile ============ //
         const userData = await UserModel.create({...data});
         data.user = userData._id;
-        await profileService.createProfile(data,res);
+        // await profileService.createProfile(data,res);
         
         
         // ================ Generate Token And Code for Email Code Verification ================== //
@@ -187,6 +187,9 @@ class AuthService {
         if(user.otpEmailVerify != userData.code){
             return false;
         }
+        const profile = await profileService.createProfile({user:userId},res);
+        console.log({profile});
+        user.profileId = profile._id
         user.isVerified = true;
         user.otpEmailVerify = '';
         user.verifyOtpToken = '';
@@ -212,9 +215,7 @@ class AuthService {
     async forgotPassword (email) {
         const user = await UserModel.findOne({email});
         if(!user) return false;
-        // const code =  generateOtp();
         const token = generateJWT(user._id,user.role,'2m');
-        // user.otpforgotPassword = code;
         user.forgotPasswordToken = token;
         // send mail
         // await sendEmail({subject:"Verify Email",email,message:forgotPasswordOtp})
@@ -222,37 +223,6 @@ class AuthService {
         return true;
     }
 
-    // async verifyForgotPasswordCode (usertoken,code,res) {
-    //     console.log({usertoken});
-    //     let token;
-    //     try {
-    //         token = verifyToken(usertoken);
-    //     } catch (error) {
-    //         res.status(400);
-    //         throw new Error("Expired Code.")
-    //     }
-    //     const {userId} = token;
-    //     const user = await UserModel.findById({_id:userId});
-
-    //     if(user.otpforgotPassword !== code) return false
-    //     user.otpforgotPassword = null;
-    //     user.forgotPasswordToken = '';
-    //     await user.save();
-    //     return true;
-    // }
-
-    // async resendForgotPasswordOtp (email) {
-    //     const user = await UserModel.findOne({email});
-    //     if(!user) return false;
-    //     const code =  generateOtp();
-    //     const token = generateJWT(user._id,user.role,'2m');
-    //     user.otpforgotPassword = code;
-    //     user.forgotPasswordToken = token;
-    //     // send mail
-    //     // await sendEmail({subject:"Reset Password",email,message:forgotPasswordOtp});
-    //     await user.save();
-    //     return {code,token};
-    // }
 
     async resetPassword (newPassword, usertoken,res) {
         let token;
@@ -270,9 +240,40 @@ class AuthService {
         return true;
     } 
 
-    async becomeAnAuthor (req,res) {
-        // 
+    // ======== works for both becoming an author and editing author info ============ //
+    async becomeAnAuthor (userData,profilePic,res) {
+        const {socials,id} = userData;
+        if(socials){
+            // check if social handles are valid
+        }
+
+        // ========== save profile image to aws =========== //
+        let upload;
+        const user = await UserModel.findById({_id:id});
+
+        if(profilePic){
+            const picName = `${Date.now()}.${profilePic.originalname.split('.').pop()}`;
+            try {
+                upload = await uploadToS3(profilePic,picName,profilePic.mimetype);
+                user.profilePic = upload ? upload : null;
+            } catch (error) {
+                // console.log(error);
+            }
+        }
+        
+        // ======== update User and Profile ========= //
+        user.role = "author"
+        const profile = await profileService.becomeAuthor(userData,user.profileId);
+        if(!profile) {
+            res.status(500);
+            throw new Error("Error updating user's profile");
+        }
+        await user.save();
+        const token = generateJWT(user._id,user.role);
+        return {token,user};
     }
+
+    
 
     async getUser(req){
         const user = await UserModel.findById({_id:req.user.userId});

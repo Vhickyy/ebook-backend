@@ -10,7 +10,7 @@ const paymentController = new PaymentController()
 class OrderService {
 
     async createOrder ({cartId,user,bookId}) {
-        console.log(cartId,bookId,user);
+        console.log({cartId,bookId,user});
         if(bookId){
             const boughtByUser = await LibraryModel.findOne({user,book:bookId});
             if(boughtByUser) return false;
@@ -80,7 +80,7 @@ class OrderService {
                     { new: true }
                 );
                 // console.log({cart});
-                if(!cart.items.length) {
+                if(!cart?.items?.length) {
                     await cart.deleteOne();
                 }
             } else{

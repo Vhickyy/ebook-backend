@@ -86,6 +86,7 @@ class BookService {
 
     async getAllBooks (req){
         const {search,category,page} = req.query;
+        // console.log({category});
         const query = {};
         if(search){
             query.title = { $regex: search, $options: 'i' };
@@ -121,6 +122,7 @@ class BookService {
         books = await BookModel.find(query).skip(skip).limit(limit).populate({ path: "author", select: "fullname" });
         const totalBooks = await BookModel.countDocuments(query);
         const pageSize = Math.ceil(totalBooks / limit);
+        // console.log({books});
         return {books,pageSize};
     }
 

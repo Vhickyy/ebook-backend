@@ -14,8 +14,7 @@ app.use(express.json());
 //     origin: ["https://warm-book.vercel.app"]
 // }))
 app.use(cors({
-    origin: "*"
-    // origin: [process.env.FRONTEND,process.env.LOCAL]
+    origin: "https://warm-book.vercel.app"
 }))
 
 const port = process.env.PORT || 8000;

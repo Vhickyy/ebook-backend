@@ -18,6 +18,7 @@ class AuthController {
         const {user,cart} = await authService.loginUser({email,password,uuid},res);
         const token = generateJWT(user._id,user.role);
         // console.log({cart},"control");
+        console.log({token,cart,user});
         return res.status(200).json({success: "true",data:{user,token,carts:cart},message:"Login Successful"})
     }
 
@@ -71,6 +72,7 @@ class AuthController {
     }
 
     async getUser (req,res) {
+        console.log("calling");
         const user = await authService.getUser(req);
         if(!user) return res.status(404).json({success:false,message:"No user found"});
         return res.status(200).json({success:true,data:user,message:"User sent"})

@@ -46,7 +46,7 @@ class AuthService {
         // ================ Generate Token And Code for Email Code Verification ================== //
         const token = generateJWT(userData._id,userData.role,'2m');
         const code =  generateOtp();
-        userData.otpEmailVerify = code
+        userData.otpEmailVerify = code;
         userData.verifyOtpToken = token;
         await userData.save();
 
@@ -55,8 +55,8 @@ class AuthService {
 
         // ==================== Send Mail ================== //
         // await sendEmail({subject:"Verify Email",email:data.email,message:code})
-        const {otpEmailVerify, ..._user} = userData.toJSON();
-        console.log("hey");
+        // const {otpEmailVerify, ..._user} = userData.toJSON();
+        // console.log("hey");
         return true;
     }
 
@@ -86,8 +86,9 @@ class AuthService {
         if(user?.role == 'author' && annonymousCart?.items){
             annonymousCart.items = annonymousCart.items.filter(item => {
                 return item.author._id.toString() !== user._id.toString()
-            })
+            });
         }
+        console.log("yooo");
 
 
         // =========== Check If A Book Bought By User Is In Anonymous Cart ================== //
@@ -100,19 +101,27 @@ class AuthService {
             // ============ Remove bought book from anonymous cart ============ //
             if(annonymousCart?.items.length){
                 for(let i = 0; i < annonymousCart.items.length; i++){
-                    strCart.push(annonymousCart.items[i].toString());
+                    // console.log({ann:annonymousCart.items[i]});
+                    strCart.push(annonymousCart.items[i]._id.toString());
                     const item  = lib.find(lib => {
-                        return lib.book.toString() == annonymousCart.items[i].toString()
+                        console.log(lib.book.toString(),"ohh");
+                        return lib.book.toString() == annonymousCart.items[i]._id.toString()
                     });
+
                     if(item){
                         inLib.push(item.book.toString())
                     }
                 }
 
                 if(strCart.length === inLib.length){
-                    annonymousCart = [];
+                    annonymousCart = {};
+        console.log("hii");
+
                 }else{
+        console.log("hiin333");
+        // console.log({strCart,inLib});
                     const newCartSet = strCart.filter(item => !inLib.includes(item));
+                    // console.log({newCartSet});
                     annonymousCart.items = newCartSet;
                     annonymousCart = await annonymousCart.save();
                     await annonymousCart.populate("items","price")
@@ -120,17 +129,17 @@ class AuthService {
             }
 
         }
+        console.log("hi111111111i");
 
         let cart = await CartModel.findOne({user:user._id}).populate("items","price");
-
-
+        console.log({cart,annonymousCart});
+        console.log(annonymousCart.items);
         // =========== Merge Anonymous Cart with Main Cart =========== //
-
-        if(annonymousCart?.items.length){
+        if(annonymousCart.items && annonymousCart.items.length){
             await annonymousCart.populate("items","price")
-
+            console.log({annonymousCart});
             const merge = [...(annonymousCart ? annonymousCart.items : []),...(cart ? cart.items : [])];
-            
+            console.log({merge});
             let mergeCarts = {};
             for(let i = 0; i < merge.length; i++){
                 if(!mergeCarts[merge[i]._id.toString()]){
@@ -151,8 +160,7 @@ class AuthService {
                 await cart.save();
             }
         }
-        
-        console.log({annonymousCart},"here",{uuid});
+        console.log("whata");
         await AnonymousCartModel.findOneAndDelete({uuid});
         if(cart){
             await cart.populate({path:"items",populate:{path:"author frontCover"}});
@@ -160,6 +168,7 @@ class AuthService {
             cart = [];
         }
         return {user,cart}
+        // return "hi"
     }
 
 
@@ -191,7 +200,7 @@ class AuthService {
         console.log({profile});
         user.profileId = profile._id
         user.isVerified = true;
-        user.otpEmailVerify = '';
+        user.otpEmailVerify = null;
         user.verifyOtpToken = '';
         await user.save();
         return true;

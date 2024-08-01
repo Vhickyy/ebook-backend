@@ -3,8 +3,8 @@ import ReviewModel from "./ReviewModel.js";
 
 class ReviewService {
 
-    async postReview (data,res) {
-        const book = await BookModel.findOne({_id:data.bookId});
+    async postReview (data,id,res) {
+        const book = await BookModel.findOne({_id:id});
         if(!book){
             res.status(404);
             throw new Error("The requested book does not exist")
@@ -13,12 +13,12 @@ class ReviewService {
             res.status(400);
             throw new Error("You cannot review your book")
         }
-        const reviewedByUser = await ReviewModel.findOne({_id:data.bookId,user:data.reviewer});
+        const reviewedByUser = await ReviewModel.findOne({bookId:id,user:data.reviewer});
         if(reviewedByUser){
             res.status(400);
             throw new Error("You have already reviewed this book.")
         }
-        const review = await ReviewModel.create(data);
+        const review = await ReviewModel.create({...data,bookId:id});
         return review;
     }
 

@@ -33,8 +33,6 @@ const BookSchema = mongoose.Schema({
     },
     frontCover:{
         type: {
-            // secureUrl: String,
-            // publicUrl: String
             image: String,
             imageUrl: String
         },
@@ -42,8 +40,6 @@ const BookSchema = mongoose.Schema({
     },
     backCover: {
         type: {
-            // secureUrl: String,
-            // publicUrl: String
             image: String,
             imageUrl: String
         },
@@ -51,8 +47,6 @@ const BookSchema = mongoose.Schema({
     },
     pdf: {
         type: {
-            // secureUrl: String,
-            // publicUrl: String
             image: String,
             imageUrl: String
         },

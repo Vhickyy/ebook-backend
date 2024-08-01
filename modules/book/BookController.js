@@ -27,7 +27,10 @@ class BookController {
     }
 
     async getBook (req,res){
-       
+       const {id} = req.params;
+       if(!id){
+        return res.status(404).json({success: false, message: "Provide valid id"})
+       }
         const book = await bookService.getBook(req);
         if(!book){
             return res.status(404).json({success: false, message: "No such book"})

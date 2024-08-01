@@ -26,7 +26,8 @@ const userSchema = mongoose.Schema({
         type: String
     },
     otpEmailVerify:{
-        type: Number
+        type: Number,
+        default: null
     },
     verifyOtpToken:{
         type: String

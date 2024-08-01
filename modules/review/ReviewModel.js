@@ -5,7 +5,9 @@ const ReviewSchema = mongoose.Schema({
         type:String
     },
     rating: {
-        type: Number
+        type: Number,
+        min: 1,
+        max: 5
     },
     bookId: {
         type: mongoose.Types.ObjectId,

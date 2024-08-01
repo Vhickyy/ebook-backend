@@ -5,7 +5,7 @@ const notFoundHandler = (req,res) => {
 }
 
 const errorHandler = (err,req,res,next) => {
-    console.log({msg:err.message});
+    // console.log({msg:err});
     let status =  res.statusCode || 500;
     if(err.message == 'fetch failed'){
         status = 400;

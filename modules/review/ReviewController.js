@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import ReviewService from "./ReviewService.js"
 
 const reviewService = new ReviewService();
@@ -5,9 +6,12 @@ const reviewService = new ReviewService();
 class ReviewController {
 
     async postReview (req,res) {
-        if(!req.body.review || !req.body.rating || !req.body.bookId) return res.status(400).json({success:false,message:"Review and rating are required"})
+        const id = req.params.id;
+        // console.log(req.body,{id});
+        if(!id || !mongoose.isValidObjectId(id)) return res.status(400).json({success:false,message:"Provide a valid book Id"});
+        if(!req.body.review || !req.body.rating) return res.status(400).json({success:false,message:"Review and rating are required"});
         req.body.reviewer = req.user.userId;
-        const review = await reviewService.postReview(req.body,res);
+        const review = await reviewService.postReview(req.body,id,res);
         return res.status(201).json({success:true,message:"Review Created Successfully", data:review});
     }
 

@@ -136,6 +136,8 @@ class BookService {
         console.log("fetch");
         // console.log(_id);
         let book = await BookModel.findById({_id:req.params.id}).populate("author").populate("reviews");
+        console.log({book});
+        if(!book) return false
         // console.log({book});
         // check if there is a user and if the book is in their library or cart then they should read and not buy it, if they started readin, they should continue reading.
         if(req?.user){
@@ -143,7 +145,7 @@ class BookService {
 
             //------ find if book  in library first to display if bought or not ----------//
             const library = await LibraryModel.findOne({user:userId,book:req.params.id});
-            book = library ? {...book.toJSON(),bought:true} : {...book.toJSON(),bought:false};
+            book = library ? {...book?.toJSON(),bought:true} : {...book?.toJSON(),bought:false};
 
             if(!library){
                 const cart = await CartModel.findOne({user:userId,items:{$in: [req.params.id]}});
@@ -154,7 +156,7 @@ class BookService {
             if(req.query.uuid){
                 const annonymousCart = await AnnonymousCartModel.findOne({uuid:req.query.uuid,items:{$in: [req.params.id]}});
                 console.log({annonymousCart});
-                book = annonymousCart ? {...book.toJSON(),inCart:true} : {...book.toJSON(),inCart:false};
+                book = annonymousCart ? {...book?.toJSON(),inCart:true} : {...book?.toJSON(),inCart:false};
             }
         }
         // console.log({book});

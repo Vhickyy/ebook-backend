@@ -10,12 +10,12 @@ import cors from "cors"
 const app = express();
 
 app.use(express.json());
-// app.use(cors({
-//     origin: ["https://warm-book.vercel.app"]
-// }))
 app.use(cors({
-    origin: "https://warm-book.vercel.app"
+    origin: ["https://warm-book.vercel.app"]
 }))
+// app.use(cors({
+//     origin: [process.env.FRONTEND,process.env.LOCAL]
+// }))
 
 const port = process.env.PORT || 8000;
 

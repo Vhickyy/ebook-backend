@@ -15,11 +15,11 @@ class ReviewController {
         return res.status(201).json({success:true,message:"Review Created Successfully", data:review});
     }
 
-    // async getAllReview (req,res) {
-    //     // admin route
-    //     const reviews = await reviewService.getAllReview(req.body,res);
-    //     return res.status(200).json({success:true,message:"Reviews Sent Successfully", data:reviews});
-    // }
+    async getBookReview (req,res) {
+        // admin route
+        const reviews = await reviewService.getBookReviews(req.params.id,res);
+        return res.status(200).json({success:true,message:"Reviews Sent Successfully", data:reviews});
+    }
 
     // async getReview(req,res) {
     //     const review = await reviewService.getReview(req.params.id,res);

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import BookModel from "../book/BookModel.js";
 import ReviewModel from "./ReviewModel.js";
 
@@ -23,11 +24,10 @@ class ReviewService {
     }
 
 
-    // async getAllReviews () {
-    //     // admin route
-    //     const reviews = await ReviewModel.find({});
-    //     return reviews;
-    // }
+    async getBookReviews (id) {
+        const reviews = await ReviewModel.findOne({bookId:id});
+        return reviews;
+    }
 
    
 

@@ -133,13 +133,11 @@ class BookService {
     }
 
     async getBook (req){
-        console.log("fetch");
-        // console.log(_id);
         let book = await BookModel.findById({_id:req.params.id}).populate("author").populate("reviews");
         console.log({book});
         if(!book) return false
-        // console.log({book});
-        // check if there is a user and if the book is in their library or cart then they should read and not buy it, if they started readin, they should continue reading.
+
+        // ========== check if there is a user and if the book is in their library or cart then they should read and not buy it, if they started readin, they should continue reading. =========//
         if(req?.user){
             const {userId} = req.user;
 
@@ -151,7 +149,6 @@ class BookService {
                 const cart = await CartModel.findOne({user:userId,items:{$in: [req.params.id]}});
                 book = cart ? {...book,inCart:true} : {...book,inCart:false};
             }
-
         }else{
             if(req.query.uuid){
                 const annonymousCart = await AnnonymousCartModel.findOne({uuid:req.query.uuid,items:{$in: [req.params.id]}});
@@ -159,7 +156,6 @@ class BookService {
                 book = annonymousCart ? {...book?.toJSON(),inCart:true} : {...book?.toJSON(),inCart:false};
             }
         }
-        // console.log({book});
         return book;
     }
 
@@ -181,7 +177,8 @@ class BookService {
         const pdfFile = pdf[0];
         const frontCoverImage = frontCover[0];
         const backCoverImage = backCover[0];
-        // check if pdf is doc and the rest are images of specific size
+
+        //  ========== check if pdf is doc and the rest are images of specific size ========== //
         if(!pdfFile.mimetype.includes("pdf") || !frontCoverImage.mimetype.includes("image") || !backCoverImage.mimetype.includes("image")){
             res.status(400)
             throw new Error("Provide a front and back cover image for book.")
@@ -189,7 +186,6 @@ class BookService {
         let resImg;
         let resPdf;
         try {
-            // console.log(pdfFile.path);
             resPdf = await cloudinay.v2.uploader.upload(pdfFile.path, {
                 resource_type: "raw", 
                 folder: "pdf" 

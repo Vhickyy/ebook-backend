@@ -115,13 +115,9 @@ class AuthService {
 
                 if(strCart.length === inLib.length){
                     annonymousCart = {};
-        console.log("hii");
 
                 }else{
-        console.log("hiin333");
-        // console.log({strCart,inLib});
                     const newCartSet = strCart.filter(item => !inLib.includes(item));
-                    // console.log({newCartSet});
                     annonymousCart.items = newCartSet;
                     annonymousCart = await annonymousCart.save();
                     await annonymousCart.populate("items","price")
@@ -129,13 +125,12 @@ class AuthService {
             }
 
         }
-        console.log("hi111111111i");
 
         let cart = await CartModel.findOne({user:user._id}).populate("items","price");
-        console.log({cart,annonymousCart});
-        console.log(annonymousCart.items);
+
+
         // =========== Merge Anonymous Cart with Main Cart =========== //
-        if(annonymousCart.items && annonymousCart.items.length){
+        if(annonymousCart?.items && annonymousCart?.items?.length){
             await annonymousCart.populate("items","price")
             console.log({annonymousCart});
             const merge = [...(annonymousCart ? annonymousCart.items : []),...(cart ? cart.items : [])];
@@ -160,7 +155,7 @@ class AuthService {
                 await cart.save();
             }
         }
-        console.log("whata");
+
         await AnonymousCartModel.findOneAndDelete({uuid});
         if(cart){
             await cart.populate({path:"items",populate:{path:"author frontCover"}});
@@ -168,7 +163,6 @@ class AuthService {
             cart = [];
         }
         return {user,cart}
-        // return "hi"
     }
 
 

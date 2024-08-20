@@ -7,7 +7,7 @@ const ReviewRouter = express.Router();
 const reviewController = new ReviewController()
 
 ReviewRouter.post("/:id", authMiddleware, reviewController.postReview);
-// ReviewRouter.get("/",  reviewController.getAllReview);
+ReviewRouter.get("/:id",  reviewController.getBookReview);
 // ReviewRouter.get("/:id",  reviewController.getReview);
 // ReviewRouter.patch("/:id", authMiddleware,  reviewController.updateReview);
 // ReviewRouter.delete("/:id", authMiddleware,  reviewController.deleteReview);

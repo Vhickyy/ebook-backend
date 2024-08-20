@@ -22,7 +22,7 @@ class BookController {
     async getAllAuthorBooks (req,res){
         // console.log(req.body.id);
         const books = await bookService.getAllAuthorBooks(req.params.id);
-        console.log(books);
+        // console.log(books);
         return res.status(200).json({success: true,message:"Books sent successfully", data: {books}})
     }
 

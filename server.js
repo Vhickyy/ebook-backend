@@ -25,7 +25,7 @@ const server = async () => {
         app.listen(port, () => {
             console.log(`Server listening on port ${port}`);
         })
-        appConfig(app)
+        appConfig(app); 
     } catch (error) {
         process.exit(1)
     }

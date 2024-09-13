@@ -25,7 +25,10 @@ class ReviewService {
 
 
     async getBookReviews (id) {
-        const reviews = await ReviewModel.findOne({bookId:id});
+        // const reviews = await ReviewModel.findOne({bookId:id}).populate({path:'review',select:'fullname'});
+        const reviews = await ReviewModel.find({bookId:id}).populate({ path: 'reviewer', select: 'fullname profilePic' });
+        console.log(reviews);
+        
         return reviews;
     }
 

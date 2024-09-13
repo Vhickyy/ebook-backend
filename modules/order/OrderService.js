@@ -24,7 +24,6 @@ class OrderService {
             
             return data;
         }
-        // console.log("ss");
         let cart = await CartModel.findById({_id:cartId}).populate("items").populate("user");
         if(!cart)return false;
         const {total} = cart;
